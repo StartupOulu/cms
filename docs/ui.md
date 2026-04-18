@@ -118,6 +118,17 @@ name, not a UI string.
   section gets a 2px bottom-border in the accent blue. Same color as
   the input focus ring, so the visual vocabulary is consistent.
 
+**Site switcher (M6+).**
+
+- Single-site users don't see the switcher — no chrome for a
+  decision that doesn't exist. Up to and including M5 there is only
+  one site, so the switcher is absent from the UI.
+- When a user is a member of more than one site, a switcher sits
+  between the wordmark and the primary nav. Shows the current
+  site's `name` with a chevron; dropdown lists the user's sites.
+- Selection persists on the `User.current_site_id` column and is
+  the default context on next sign-in.
+
 **Account menu.**
 
 - Trigger: the signed-in user's display name as plain text, followed
@@ -277,7 +288,7 @@ mobile.
   group from published posts below. No separate tabs or filters in
   M1.
 
-### Editor
+### Post editor
 
 - Primary: **Publish** (or **Update** when the post is already
   published). One button.
@@ -299,16 +310,32 @@ mobile.
       a quiet warning at edit time: `Changing the web address means
       old links to this post will stop working.` Don't block the
       edit.
-3. **Body** — the block editor (see `The editor` section below).
-4. **Excerpt / summary** — optional single-line input below the body.
-   Label it plainly (`Summary`), note it's optional. Used for the
-   listing page on the live site; never required to publish.
+3. **Cover image** — single image slot above the body. Drag/drop or
+   click to upload. Same upload pattern as inline body images; hero
+   aspect preview. Maps to the Jekyll `blog_image` front-matter
+   field.
+4. **Body** — the block editor (see `The post editor` section below).
+5. **Summary** — optional multiline text below the body. Stored as
+   the `description` front-matter field; appears on the blog
+   listing page on the live site. Never required to publish.
 
 Nothing else in the editor chrome for M1. No tags, no publish date
 picker, no author field (author comes from the signed-in user).
 Additional metadata gets added only when a concrete need shows up.
 
-## The editor
+### Event editor
+
+- Primary: **Publish** (or **Update** when the event is already
+  published). Same disabled-when-nothing-to-publish behaviour as
+  the post editor.
+- No `Save` button — autosave handles it.
+- Preview: secondary text link.
+- Unpublish: `...` menu.
+
+The event editor is a form, not a block editor. See `The event
+editor` below for the field layout.
+
+## The post editor
 
 A custom block-based markdown editor. Each block is one markdown
 primitive. Blocks are stored as a JSON array in SQLite; on publish
@@ -399,6 +426,47 @@ plain text.
   time. A browser-session cookie (Rails default) would make the tool
   feel hostile to casual use.
 
+## The event editor
+
+A form-based editor for `Content::Event`. Events are structured
+data, not documents — no block editor, no slash menu, no inline
+formatting.
+
+### Fields
+
+Top to bottom:
+
+1. **Title** — large H1 input, styled like the post editor's title.
+   Auto-generates the slug.
+2. **Slug / URL preview** — small, muted text under the title
+   (e.g. `startupoulu.com/events/my-event`). Click to edit. Same
+   post-publish-rename warning as the post editor.
+3. **When** — two `<input type="datetime-local">` fields labelled
+   `Starts` and `Ends`. Side-by-side on desktop, stacked on mobile.
+   Native OS pickers; no JS date library.
+4. **Where** — single-line text input labelled `Location`. Optional.
+5. **Cover image** — single image slot. Drag/drop or click to
+   upload. Same upload pattern as post images; hero aspect preview.
+6. **Summary** — short optional multiline, labelled `Summary`. Maps
+   to the Jekyll `excerpt` front-matter field and appears on listing
+   cards.
+7. **Description** — multiline textarea, plain paragraphs separated
+   by blank lines. No block editor, no rich text. The publish
+   serializer converts blank-line-separated paragraphs into
+   `<br><br>`-joined HTML to match the Jekyll event layout's inline
+   rendering. Documented in-field as a muted hint:
+   *"Separate paragraphs with a blank line."*
+8. **Call-to-action** — grouped pair: `Button label` text input and
+   `Button link` URL input. If either is filled, both are required
+   at publish time. Inline validation, not a modal.
+
+### Shared with the post editor
+
+Autosave, preview, unpublish, `Publish` / `Update` button behaviour,
+and the after-publish confirmation screen are identical to the post
+editor. The event file committed to the website repo has no
+markdown body — everything lives in the front matter.
+
 ## Explicitly out of scope
 
 - Dark mode (M1–M3)
@@ -415,6 +483,9 @@ plain text.
 - Tags, categories, and multi-author attribution in the editor (no
   concrete need yet)
 - Inline formatting in paragraphs (bold, italic, links) — deferred
-  until users request it; see `The editor` above
+  until users request it; see `The post editor` above
 - Block reordering — deferred; users cut and repaste
 - Tables, callouts, columns, and any non-v1 block types
+- Rich text, block editor, or inline formatting in event description
+  — plain paragraphs serialized to `<br>`-joined HTML (see `The
+  event editor` above)

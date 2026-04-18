@@ -8,9 +8,14 @@ An open-source CMS for publishing blog posts and events to Jekyll-based
 websites via Git. Built primarily for [startupoulu.com](https://startupoulu.com)
 but designed to be reusable.
 
+A single CMS instance manages one or more Jekyll websites. Each site
+is a separate website repository; a user can be a member of multiple
+sites, as an editor or admin. StartupOulu is the first site served;
+the CMS is site-agnostic from day one.
+
 The CMS is a friendly wrapper around Git for non-technical users. They
 see "Save draft" and "Publish" — never "commit" or "branch". Published
-content is committed to a separate website repository (e.g.
+content is committed to the selected site's website repository (e.g.
 `startupoulu/startupoulu.github.io`), which GitHub Pages builds and serves.
 
 ## Core principles
@@ -22,8 +27,10 @@ content is committed to a separate website repository (e.g.
 - **Git is the source of truth for published content.** If the CMS dies,
   the website survives untouched. Don't let the CMS accumulate state
   that isn't reconstructible from the repo.
-- **Generalize from day one.** No hardcoded "startupoulu". Target repo,
-  branch, and content paths are configuration.
+- **Generalize from day one.** No hardcoded "startupoulu", and no
+  assumed single site. Sites are first-class rows in the database;
+  target repo, branch, content paths, and publish author are per-site
+  configuration.
 
 ## Stack
 
@@ -45,18 +52,13 @@ runs as an external command via `Open3`, not as a Rails dependency.
 
 ## Architecture
 
-Two repositories:
-
-1. **CMS repo** — this Rails app
-2. **Website repo** — e.g. `startupoulu/startupoulu.github.io`, a Jekyll site
-
-The CMS server has a local clone of the website repo on disk. Publishing
-writes files into that clone, commits, and pushes to GitHub via a deploy
-key. GitHub Pages rebuilds and serves the site.
-
-```
-Editor → CMS (Rails) → local repo clone → GitHub → GitHub Pages
-```
+See `docs/architecture.md` for the architectural detail — the
+multi-site setup, preview rendering, data model, publish pipeline,
+and configuration split. In short: one CMS instance manages one or
+more Jekyll website repos; editor actions become Git commits to the
+selected site's repo, and GitHub Pages rebuilds and serves the
+site. Per-site membership controls who can edit or administer each
+site.
 
 ## Frontend constraints
 
@@ -101,65 +103,6 @@ losslessly.
 **Build tooling:** Importmap + Propshaft. No Node, no npm, no Webpack,
 no esbuild. The editor stays within this constraint.
 
-## Preview feature
-
-Users must be able to preview events and blog posts before publishing,
-rendered as they will appear on the live site.
-
-### Approach: include the website repo as a Git submodule
-
-The CMS repo includes `startupoulu/startupoulu.github.io` as a submodule
-at `vendor/site/` (or similar). This gives the CMS access to the
-Jekyll site's layouts, includes, CSS, and config without duplicating
-them.
-
-### Preview rendering
-
-**Approach: run Jekyll in the CMS (fidelity over speed).**
-
-Jekyll is a runtime dependency of the CMS server. Document it in the
-README and install it via the setup script (`bin/setup`).
-
-- On preview request, write the draft's rendered markdown to a temp
-  location inside the submodule's `_posts/` or `_events/`
-- Run `jekyll build` against the submodule via `Open3.capture3`
-- Serve the resulting HTML in an iframe or new tab
-- Clean up temp files after a timeout or on next preview
-
-Rationale: drift between preview and production is a trust-breaker —
-users would stop trusting the preview and manually check the live site,
-which defeats the purpose. A few seconds of build time is an acceptable
-trade.
-
-### Preview flow
-
-1. User clicks "Preview" in the draft editor
-2. CMS writes the draft to a temp file inside the submodule's content
-   directory with a unique preview slug
-3. CMS runs `jekyll build --destination tmp/preview/<draft_id>/` via
-   `Open3.capture3`
-4. CMS serves the built HTML at `/preview/<draft_id>/...`
-5. Temp files cleaned up after a timeout or on next preview
-
-### Submodule management
-
-- Pin the submodule to a specific commit in the CMS repo — don't
-  auto-update. Preview should match the *published* site, not whatever
-  is currently on `main`.
-- A rake task `bin/rails cms:update_site_submodule` pulls the latest
-  commit from the site repo when an admin wants to refresh.
-- After a successful publish, the CMS can automatically bump the
-  submodule to the commit it just pushed — keeps previews in sync with
-  reality.
-
-### Constraints
-
-- Never serve preview output on the same path as published content
-- Previews are authenticated-only; don't let them leak drafts publicly
-- Sanitize the draft slug before using it as a path component
-  (`Open3.capture3` handles shell safety, but path traversal is still
-  possible if slugs aren't validated)
-
 ## Roadmap
 
 Built in milestones, each one shippable to production on its own. Ship
@@ -169,18 +112,27 @@ M1 to startupoulu.com before starting M2. Learn from real use.
 
 **Goal:** an admin can write a blog post and publish it to the live site.
 
+- **Site-aware schema from day one.** `Site`, `Membership`, and
+  `site_id` FKs on `Content::Post` and `Audit::Event`. One site
+  seeded via console; no site-management UI yet. `Current.site`
+  alongside `Current.user`.
 - Single content type: `Content::Post`
 - Plain markdown editor (textarea only; block editor arrives in M2)
 - No drafts, no preview — publish or don't
-- Single admin user, password auth (Rails 8 generator)
-- Local git clone of the website repo on the server
+- Single admin user with a membership on the seeded site, password
+  auth (Rails 8 generator)
+- Per-site git clone on the server (`shared/repos/<site-slug>/`)
 - `PublishService` writes markdown to `_posts/`, commits, pushes
 - Synchronous publish in the request (2-second wait, no job queue)
-- File lock to serialize concurrent publishes
-- `Audit::Event` model logs every publish action (namespaced to avoid
-  collision with the `Content::Event` model added in M4)
+- Per-site file lock to serialize concurrent publishes
+- `Audit::Event` model logs every publish action, scoped to the site
+  and attributed to the acting user via `user_id` (always the single
+  admin in M1; M4 surfaces per-user attribution in the UI).
+  Namespaced to avoid collision with the `Content::Event` model
+  added in M4.
 - Nginx + Certbot + Puma via systemd
-- README with setup walkthrough
+- README with setup walkthrough, including console recipes to create
+  the first site and admin
 
 **Done when:** a post written in the CMS appears on startupoulu.com
 within a minute.
@@ -191,11 +143,20 @@ within a minute.
 in progress.
 
 - `Content::Post` gains `draft` / `published` states
+- `Content::Post` gains first-class non-body columns: `description`
+  (prose summary → `description:` front matter) and `cover_image`
+  (Active Storage attachment → `blog_image:` front matter). See
+  `docs/architecture.md` → Post schema.
+- Two-body snapshot on `Content::Post`: `blocks` (autosaved) +
+  `published_blocks` (site snapshot), plus `published_fields` JSON
+  for the non-body columns, so autosave never leaks to the live
+  site. See `docs/architecture.md` → Post body states.
 - Custom block-based markdown editor replaces the textarea (see
   `docs/ui.md`)
-- Active Storage for images
+- Active Storage for images — cover image plus inline body images
 - Drag-and-drop and paste-to-upload via a Stimulus controller
-- Images commit to `assets/` in the website repo on publish
+- Images commit to `assets/images/blogs/` in the website repo on
+  publish
 - Unpublish action (new commit removing the file)
 - Edit published content (new commit overwriting)
 - Slug rename handles old-file deletion in the same commit
@@ -211,50 +172,92 @@ drop in screenshots, publish, edit later.
 - `_drafts/` directory used in the existing website repo clone (no
   separate submodule)
 - `jekyll serve --drafts` as a background systemd service on localhost
-- Rails proxies `/preview/<post_id>` to the local Jekyll server
+- Rails proxies `/preview/<site-slug>/<post_id>` to that site's
+  local Jekyll server
 - Authenticated-only; preview URLs never leak drafts publicly
 - Slug validation to prevent path traversal
 
 **Done when:** clicking "Preview" shows the draft rendered with the
 real site layout and CSS.
 
-### M4 — Events and multi-user
+### M4 — Events and multi-user within a site
 
-**Goal:** second content type and more than one person using the CMS.
+**Goal:** second content type and more than one person using the
+CMS. Still single-site operationally; multi-site management UI
+arrives in M6.
 
 - `Content::Event` content type: title, start/end datetime, location,
-  description, hero image, RSVP link
-- Separate `EventsController` and editor view with date pickers
+  cover image, summary (excerpt), description, call-to-action
+  (title + link). Stored as flat typed columns — **not** the block
+  editor. See `docs/architecture.md` → Events schema for the
+  front-matter mapping.
+- Separate `EventsController` and a form-based editor view with
+  native datetime pickers. No block editor for events.
 - Timezone handling (store UTC, display in Europe/Helsinki)
-- Multi-user: `editor` and `admin` roles
-- Admin invites editors by email
-- Per-user attribution on `Audit::Event` entries
+- Events inherit the M2 publish machinery (unpublish,
+  edit-after-publish, slug rename) and a `published_fields` JSON
+  snapshot parallel to posts' `published_blocks`. The M2 image
+  pipeline extends to the event cover-image slot
+  (`assets/images/events/`). M3 preview extends to events at
+  `/preview/<site-slug>/<event_id>`.
+- **Admin creates users and memberships via Rails console** with a
+  temporary password. New users land on a forced-password-change
+  screen at first sign-in (`User.must_change_password` flag, cleared
+  after a successful change). No email sending (see `docs/ui.md`
+  sign-in section). Membership management UI arrives in M6.
+- Audit entries render the acting user's `display_name` (the
+  `user_id` column is already on `Audit::Event` from M1).
 
 **Done when:** the StartupOulu team is using the CMS for both blog
 posts and event announcements, with more than one person publishing.
 
-### M5 — Activity dashboard and polish
+### M5 — Activity dashboard
 
 **Goal:** small team coordinates through the CMS instead of asking
 each other on Slack.
 
-- Dashboard at `/` showing recent `Audit::Event` entries
-- "Who published what, and when" feed
-- Publish failure surfacing (if `git push` fails, the error shown in
-  the dashboard until acknowledged)
-- GitHub Pages build status polling — mark a publish as "live" only
-  after the Pages build succeeds
-- Basic search over posts and events
+- Dashboard at `/` showing recent `Audit::Event` entries for the
+  current site
+- "Who published what, and when" feed, attributed via the `user_id`
+  already on `Audit::Event`
+- Publish-failure surfacing: a persistent dashboard banner when a
+  publish errored, until an admin acknowledges it (M1 already shows
+  the inline editor error; this is the team-level surface)
+- Basic search over posts and events — SQLite FTS5 on title, slug,
+  and body text
 
 **Done when:** someone visits `/` and sees "Maria published *Foo* 2
 hours ago" and feels oriented.
 
-### Explicitly deferred beyond M5
+### M6 — Multi-site management
+
+**Goal:** admins can add, configure, and switch between multiple
+sites from the UI, without shell access.
+
+- Site switcher in the header — dropdown showing the user's sites,
+  defaulting to the last-used site (per-user session)
+- Admin UI to add a site: repo URL, branch, content paths, publish
+  author, site URL
+- Per-site deploy-key generation at site-add time; CMS writes the
+  keypair to `shared/ssh/<site-slug>/`, displays the public half
+  once so an admin can paste it into the website repo's deploy keys
+- Admin UI to manage memberships per site (add/remove editors,
+  promote/demote)
+- Per-site clone bootstrap via background job triggered from the
+  add-site form
+- First-site-on-install bootstrap remains the console recipe — no
+  install wizard
+
+**Done when:** a second Jekyll site can be added and published to
+from the UI without touching the server shell (beyond the initial
+CMS install).
+
+### Explicitly deferred beyond M6
 
 Scheduled publishing, version history UI beyond git log, comments,
-analytics, newsletters, multi-site configuration, approval workflows,
-taxonomies/categories beyond simple tags, video upload (embed YouTube
-for now).
+analytics, newsletters, approval workflows, taxonomies/categories
+beyond simple tags, video upload (embed YouTube for now), GitHub
+Pages build-status polling.
 
 ## Scope discipline
 
@@ -262,7 +265,9 @@ for now).
   real site."
 - Every milestone should be deployed before the next begins.
 - If a milestone is taking longer than ~a month of weekends, it's too
-  big — split it.
+  big — split it. Known candidates: M2 (drafts can ship without the
+  block editor; images can be their own step) and M4 (events can
+  ship without the multi-user auth flow).
 - Say no to features that don't fit the current milestone, even good
   ones. Write them down for later.
 
@@ -271,185 +276,11 @@ for now).
 - Roles beyond editor/admin
 - Scheduled publishing
 - Version history UI (Git has it; no UI for v1)
-- Multi-site configuration
 - Comments, analytics, newsletters
-
-## Data model notes
-
-- Drafts live in SQLite only, never touch Git.
-- On publish, the CMS generates Jekyll-formatted files (front matter +
-  markdown + media) and commits them to the website repo.
-- Editing a published post creates a new commit overwriting the file.
-- Unpublishing creates a commit removing the file.
-- Slug changes must delete the old file and create the new one in one
-  commit.
-
-### Post body states
-
-A `Content::Post` keeps two bodies side by side so that edits to a
-published post can be autosaved without leaking to the live site:
-
-- `blocks` (JSON) — the current editor state. Always written by
-  autosave. Source of truth for what the editor shows.
-- `published_blocks` (JSON, nullable) — snapshot of what's on the
-  site as of the last publish. `NULL` for posts that have never been
-  published.
-
-Derived states:
-
-- **Draft (never published):** `published_at` is `NULL`,
-  `published_blocks` is `NULL`. Only `blocks` matters.
-- **Published, no pending edits:** `published_blocks == blocks`. The
-  `Publish` / `Update` button is disabled — there's nothing to push.
-- **Published with pending edits:** `published_blocks` differs from
-  `blocks`. The `Update` button is active. Clicking it copies
-  `blocks` → `published_blocks` and commits the serialized markdown
-  to Git.
-
-This keeps the editor stateful across sessions without complicating
-the on-disk markdown.
-
-### Published paths
-
-In the website repo:
-
-- Posts: `_posts/YYYY-MM-DD-<slug>.md`
-- Events (M4): `_events/YYYY-MM-DD-<slug>.md` (or the site's
-  collection convention)
-- Media:
-  - Blog images: `assets/blog/` subfolder
-  - Event images: `assets/events/` subfolder
-  - Image filenames are prefixed with `YYYY-MM-DD-<slug>` (matching
-    the parent post's Jekyll filename) to prevent collisions across
-    posts that happen to share similarly-named uploads (e.g.
-    `hero.jpg`).
-  - Multiple images within the same post are disambiguated by a
-    sequential index appended to the prefix:
-    `YYYY-MM-DD-<slug>-1.jpg`, `YYYY-MM-DD-<slug>-2.jpg`, etc. The
-    index is assigned at publish time in insertion order.
-
-## Git process
-
-The CMS server holds a local clone of the website repo. All git
-operations shell out via `Open3.capture3` with the repo path as `chdir`.
-
-### Publish flow
-
-1. Acquire lock (Solid Queue single worker serializes publishes).
-2. `git fetch origin` + `git reset --hard origin/main` — always start
-   from a clean, up-to-date state.
-3. Write files into the working directory (markdown, media, correct
-   Jekyll paths and naming like `_posts/YYYY-MM-DD-slug.md`).
-4. `git add` the changed paths.
-5. `git commit` with a message like `Publish: <title>` and a configured
-   author.
-6. `git push origin main`.
-7. On success, mark the post as published. On failure, capture stderr,
-   mark the post as publish-failed, surface error to user.
-
-### Why `Open3.capture3`
-
-- Returns stdout, stderr, and exit status separately — needed for
-  surfacing git errors to users.
-- `chdir:` option runs in the repo path without changing the Rails
-  process cwd.
-- Arguments passed as separate strings — no shell, no injection risk
-  even with user-supplied content like post titles.
-
-Example:
-
-```ruby
-stdout, stderr, status = Open3.capture3(
-  "git", "commit", "-m", "Publish: #{post.title}",
-  chdir: repo_path
-)
-raise PublishError, stderr unless status.success?
-```
-
-Never interpolate user input into shell strings. Never use backticks or
-`system()` with interpolated content.
-
-### Concurrency
-
-One publish at a time. Enforced by running Solid Queue with a single
-worker for the publish queue. Prevents working-directory races.
-
-### CMS is the sole writer to the website repo
-
-Document this clearly. Direct commits to `main` are technically tolerated
-because `fetch + reset --hard` before each publish pulls them in, but
-the CMS assumes it owns the working tree. Don't edit the local clone
-manually on the server.
-
-### Deploy key
-
-- SSH keypair generated on the server.
-- Public half added to the website repo as a deploy key with **write**
-  access.
-- Private half referenced by `~/.ssh/config` for the CMS user.
-- Document the setup in the README.
-
-### Persistence
-
-The local repo clone must survive restarts. Requires a persistent disk:
-Fly.io with a volume, a VPS, or similar. Ephemeral filesystems
-(Heroku-style) will not work for v1.
-
-### Initial setup
-
-A rake task clones the website repo on first boot:
-
-```
-bin/rails cms:setup
-```
-
-The first admin user is created **manually** via the Rails console
-after install — no interactive prompt in `bin/setup`, no first-run
-web wizard, no ENV-driven seeding. The README documents this step:
-
-```
-bin/rails console
-> User.create!(email: "…", password: "…", display_name: "…")
-```
-
-Rationale: the installer is technical (developer or operator); the
-end user is not. Keeping the admin bootstrap out of `bin/setup` means
-`bin/setup` stays deterministic and idempotent, and credentials are
-never captured in shell history or an env file.
-
-## Configuration
-
-Follows the vanilla Rails split between secrets and non-secrets.
-
-**Rails credentials** (`config/credentials.yml.enc`, decrypted with
-`master.key`) — secrets only:
-
-- SSH deploy key path (or contents)
-- GitHub App / token credentials if added later
-- Any third-party API keys
-
-**`config/cms.yml`** — non-secret configuration, read via
-`Rails.application.config_for(:cms)`. Per-environment sections
-(`development`, `test`, `production`). Checked into git.
-
-Keys include:
-
-- `name` — wordmark text (e.g. `StartupOulu CMS`)
-- `target_repo` — website repo URL / local clone path
-- `target_branch` — the branch that GitHub Pages serves (usually
-  `main`)
-- `content_paths` — where to write posts, events, assets inside the
-  website repo
-- `publish_author` — git author name/email used for publish commits
-- `site_url` — base URL of the public site, used for URL previews
-  and `View on site` links
-
-Read config at boot; expose it via a small `CMS.config` (or similar)
-singleton so app code doesn't pass a hash around.
 
 ## Security
 
-- All secrets in Rails credentials (see `Configuration` above). Never
+- All secrets in Rails credentials (see `docs/architecture.md`). Never
   in `.env`, never in `config/cms.yml`, never committed.
 - Admin panel is internet-facing: enforce HTTPS, strong passwords.
 - Never commit credentials, deploy keys, or `.env` files.
@@ -563,194 +394,11 @@ The guiding line from DHH/37signals: **"Vanilla Rails is plenty."**
 
 ### Deployment
 
-Follows the approach described in Tuomas Jomppanen's
-["Manually deploy Ruby on Rails 8 application to Linux server"](https://www.jomppanen.com/2024/11/20/manually-deploy-ruby-on-rails-8-application-to-linux-server.html).
-No Docker, no Kamal, no containers. Just you and your Linux server.
-
-#### Architecture on the server
-
-```
-Firewall → Nginx (TLS + static assets) → Puma (Unix socket) → Rails app
-                                                              → SQLite
-```
-
-Nginx handles HTTPS, serves `public/assets` directly, and proxies
-everything else to Puma over a Unix socket. Let's Encrypt via Certbot
-keeps TLS certificates current.
-
-#### Server prerequisites
-
-- Ubuntu Linux (24.04 LTS recommended)
-- `deploy` user with SSH public-key auth and passwordless sudo
-- Ruby installed via rbenv under the `deploy` user
-- Bundler, Git, SQLite3, Nginx, Certbot, Jekyll
-- Firewall configured (UFW) allowing HTTP/HTTPS/SSH
-
-Install packages:
-
-```
-sudo apt update
-sudo apt install -y curl git-core nginx sqlite3 libsqlite3-dev \
-  build-essential libffi-dev libyaml-dev zlib1g-dev pkg-config
-```
-
-Ruby via rbenv, Bundler via `gem install bundler`, Jekyll via
-`gem install jekyll`.
-
-#### Directory structure
-
-```
-/var/www/apps/<app_name>/
-├── current -> releases/<timestamp>   # symlink to latest deploy
-├── logs/                             # Puma stdout/stderr logs
-├── releases/                         # timestamped deploy directories
-│   ├── 2026-04-16-14-30-00/
-│   └── 2026-04-17-09-15-22/
-├── shared/
-│   ├── storage/                      # SQLite databases + Active Storage
-│   └── master.key                    # Rails credentials key
-├── repo/                             # local clone of the website repo
-│                                     # (used by PublishService and preview)
-└── tmp/
-    ├── pids/
-    └── sockets/                      # Puma socket file
-```
-
-- `current/` always points to the latest release via symlink
-- `shared/storage/` persists between deploys — symlinked into each
-  release
-- `shared/master.key` copied once, symlinked into each release's
-  `config/`
-- `repo/` holds the website repository clone (for publish and preview)
-
-#### Puma configuration
-
-Puma communicates with Nginx via Unix socket. Runs Solid Queue
-in-process via the `solid_queue` plugin for single-server deployments.
-
-```ruby
-# config/puma.rb
-if ENV.fetch("RAILS_ENV", nil) == "production"
-  app_dir = ENV.fetch("APP_DIR", "/var/www/apps/startupoulu-cms")
-
-  environment "production"
-  directory "#{app_dir}/current"
-
-  bind "unix://#{app_dir}/tmp/sockets/puma.sock"
-  pidfile "#{app_dir}/tmp/pids/puma.pid"
-  state_path "#{app_dir}/tmp/pids/puma.state"
-
-  stdout_redirect "#{app_dir}/logs/puma.stdout.log",
-                  "#{app_dir}/logs/puma.stderr.log",
-                  true
-
-  preload_app!
-  workers ENV.fetch("WEB_CONCURRENCY", 2)
-
-  plugin :solid_queue if ENV["SOLID_QUEUE_IN_PUMA"]
-end
-
-threads_count = ENV.fetch("RAILS_MAX_THREADS", 3)
-threads threads_count, threads_count
-port ENV.fetch("PORT", 3000)
-```
-
-#### Nginx virtual host
-
-```nginx
-upstream rails_app {
-  server unix:///var/www/apps/startupoulu-cms/tmp/sockets/puma.sock
-         fail_timeout=0;
-}
-
-server {
-  server_name cms.startupoulu.com;
-  root /var/www/apps/startupoulu-cms/current/public;
-
-  location ^~ /assets/ {
-    gzip_static on;
-    expires max;
-    add_header Cache-Control public;
-  }
-
-  location = /favicon.ico { access_log off; log_not_found off; }
-  location = /robots.txt  { access_log off; log_not_found off; }
-
-  location / {
-    proxy_pass http://rails_app;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header Host $http_host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_redirect off;
-
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-  }
-}
-```
-
-Certbot adds the TLS directives automatically:
-`sudo certbot --nginx -d cms.startupoulu.com`
-
-#### Systemd service
-
-```ini
-# /etc/systemd/system/startupoulu-cms.service
-[Unit]
-Description=StartupOulu CMS (Puma)
-After=network.target
-
-[Service]
-Type=simple
-User=deploy
-WorkingDirectory=/var/www/apps/startupoulu-cms/current
-Environment=RAILS_ENV=production
-Environment=SOLID_QUEUE_IN_PUMA=true
-ExecStart=/home/deploy/.rbenv/shims/bundle exec puma -C config/puma.rb
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable and start:
-
-```
-sudo systemctl enable --now startupoulu-cms
-```
-
-#### Deploy script (`bin/deploy`)
-
-Lives in the CMS repo. Run from local dev: `bin/deploy`.
-
-Core steps:
-
-1. Generate a timestamped release directory name
-2. `rsync` the app to the server (excluding `.git`, `storage/`,
-   `tmp/`, `test/`, credentials keys, sqlite files)
-3. Symlink `shared/master.key` into `config/master.key`
-4. Symlink `shared/storage/` into `storage/`
-5. `bundle install` on the server
-6. `RAILS_ENV=production bin/rails db:migrate`
-7. `RAILS_ENV=production bin/rails assets:precompile`
-8. Update the `current` symlink to point to the new release
-9. `sudo systemctl restart startupoulu-cms`
-
-Rollback = point `current` symlink at the previous release directory
-and restart.
-
-#### Operational notes
-
-- **Log rotation:** configure logrotate for Puma and Nginx logs, or
-  the disk fills up
-- **Backups:** back up `shared/storage/` regularly (SQLite DBs +
-  uploads). Follow the 3-2-1 rule. Consider Litestream for continuous
-  SQLite replication to object storage.
-- **Monitoring:** `rails_performance` gem or simple uptime checks
-- **The deploy script bypasses version control** — always commit and
-  push before deploying. The deploy copies your local working tree,
-  not a git ref.
+See `docs/deployment.md` for the full walkthrough: first-time setup
+checklist, server architecture, Nginx / Puma / systemd configs,
+deploy script, and operational notes. No Docker, no Kamal, no
+containers — just `rsync` to a Linux server with Nginx, Puma,
+SQLite, Certbot, and systemd.
 
 ### Dependencies philosophy
 
@@ -791,10 +439,11 @@ Apache 2.0.
 ## Conventions for AI agents
 
 - Don't add gems unless necessary. Prefer stdlib and Rails built-ins.
-- Don't hardcode "startupoulu" anywhere. Use configuration.
+- Don't hardcode "startupoulu", and don't assume a single site. Use
+  the `Site` model; scope queries by `Current.site`.
 - Don't interpolate user input into shell commands — use `Open3.capture3`
   with separate arguments.
-- Don't let the CMS hold state that can't be reconstructed from the Git
-  repo and the drafts in SQLite.
+- Don't let the CMS hold state that can't be reconstructed from the
+  Git repos and the drafts in SQLite.
 - Keep the publish pipeline well-tested. It's the scary part.
 - When in doubt, choose the boring option.
