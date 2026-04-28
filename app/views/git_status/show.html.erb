@@ -2,8 +2,18 @@
 
 <div class="page-header">
   <h1>Git Status</h1>
-  <p class="page-header__subtitle"><%= Current.site.name %> &mdash; <%= Current.site.repo_url %></p>
 </div>
+
+<dl class="git-config">
+  <dt>Site</dt>
+  <dd><%= Current.site.name %></dd>
+  <dt>Remote</dt>
+  <dd><code><%= Current.site.repo_url %></code></dd>
+  <dt>Branch</dt>
+  <dd><code><%= Current.site.branch %></code></dd>
+  <dt>Clone path</dt>
+  <dd><code><%= Current.site.clone_path %></code></dd>
+</dl>
 
 <div class="git-status">
   <div class="git-status__summary git-status__summary--<%= @ok ? 'ok' : 'error' %>">
