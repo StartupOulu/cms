@@ -141,6 +141,70 @@
     border-block-start: 1px solid var(--color-border);
   }
 
+  /* ── Git status ───────────────────────────────── */
+  .git-status__summary {
+    padding:       var(--space-3) var(--space-4);
+    border-radius: var(--radius);
+    font-weight:   500;
+    margin-block-end: var(--space-6);
+  }
+
+  .git-status__summary--ok {
+    background: oklch(93% 0.07 145);
+    color:      oklch(28% 0.1 145);
+  }
+
+  .git-status__summary--error {
+    background: oklch(94% 0.06 25);
+    color:      oklch(35% 0.15 25);
+  }
+
+  .git-checks {
+    list-style: none;
+    padding:    0;
+    margin:     0;
+    display:    flex;
+    flex-direction: column;
+    gap:        var(--space-3);
+  }
+
+  .git-check {
+    display:     flex;
+    gap:         var(--space-3);
+    align-items: flex-start;
+    padding:     var(--space-3) var(--space-4);
+    border:      1px solid var(--color-border);
+    border-radius: var(--radius);
+  }
+
+  .git-check__indicator {
+    flex-shrink: 0;
+    width:  1rem;
+    height: 1rem;
+    border-radius: 50%;
+    margin-block-start: 2px;
+  }
+
+  .git-check--ok .git-check__indicator   { background: oklch(60% 0.15 145); }
+  .git-check--error .git-check__indicator { background: oklch(58% 0.18 25); }
+
+  .git-check__label {
+    font-size: var(--text-sm);
+  }
+
+  .git-check__error {
+    margin-block-start: var(--space-2);
+    font-size: var(--text-sm);
+    color:     var(--color-text-muted);
+  }
+
+  .git-check__error code {
+    font-family: monospace;
+    font-size:   0.85em;
+    white-space: pre-wrap;
+    word-break:  break-all;
+  }
+
   /* ── Empty state ──────────────────────────────── */
   .empty-state {
     color:      var(--color-text-muted);

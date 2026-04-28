@@ -21,12 +21,46 @@ class Site < ApplicationRecord
   validates :publish_author_email, presence: true
   validates :clone_path,           presence: true
 
+  GitCheck = Struct.new(:label, :ok, :error)
+
   def publish_author
     "#{publish_author_name} <#{publish_author_email}>"
   end
 
   def membership_for(user)
     memberships.find_by(user: user)
+  end
+
+  def check_git
+    checks = []
+
+    unless File.directory?(clone_path) && git_rev_parse_ok?
+      checks << GitCheck.new("Repository cloned", false,
+        "No git repository found at #{clone_path}. " \
+        "Run: git clone #{repo_url} #{clone_path}")
+      return checks
+    end
+    checks << GitCheck.new("Repository cloned", true, nil)
+
+    actual_url, _, status = Open3.capture3("git", "remote", "get-url", "origin", chdir: clone_path)
+    actual_url = actual_url.strip
+    unless status.success? && actual_url == repo_url
+      checks << GitCheck.new("Remote URL", false,
+        "Expected #{repo_url}, got #{actual_url.presence || '(none)'}")
+      return checks
+    end
+    checks << GitCheck.new("Remote URL", true, nil)
+
+    env = deploy_key_path.present? ? { "GIT_SSH_COMMAND" => "ssh -i #{deploy_key_path} -o StrictHostKeyChecking=no" } : {}
+    out, stderr, status = Open3.capture3(env, "git", "ls-remote", "--heads", "origin", branch, chdir: clone_path)
+    unless status.success? && out.include?(branch)
+      checks << GitCheck.new("Remote branch", false,
+        stderr.strip.presence || "Branch '#{branch}' not found on remote")
+      return checks
+    end
+    checks << GitCheck.new("Remote branch", true, nil)
+
+    checks
   end
 
   def commit_and_push(files, message, author:)
@@ -62,6 +96,11 @@ class Site < ApplicationRecord
   def in_repo
     FileUtils.mkdir_p(clone_path)
     yield
+  end
+
+  def git_rev_parse_ok?
+    _, _, status = Open3.capture3("git", "rev-parse", "--git-dir", chdir: clone_path)
+    status.success?
   end
 
   def git(*args)

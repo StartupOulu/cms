@@ -1,0 +1,26 @@
+<% content_for :title, "Git Status" %>
+
+<div class="page-header">
+  <h1>Git Status</h1>
+  <p class="page-header__subtitle"><%= Current.site.name %> &mdash; <%= Current.site.repo_url %></p>
+</div>
+
+<div class="git-status">
+  <div class="git-status__summary git-status__summary--<%= @ok ? 'ok' : 'error' %>">
+    <%= @ok ? "Git integration is working." : "Git integration has a problem." %>
+  </div>
+
+  <ul class="git-checks">
+    <% @checks.each do |check| %>
+      <li class="git-check git-check--<%= check.ok ? 'ok' : 'error' %>">
+        <span class="git-check__indicator" aria-hidden="true"></span>
+        <div class="git-check__body">
+          <strong class="git-check__label"><%= check.label %></strong>
+          <% if check.error %>
+            <p class="git-check__error"><code><%= check.error %></code></p>
+          <% end %>
+        </div>
+      </li>
+    <% end %>
+  </ul>
+</div>

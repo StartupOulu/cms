@@ -24,7 +24,7 @@ module GitTestHelper
       system("git -C #{clone} config user.email 'test@example.com'")
       system("git -C #{clone} config user.name 'Test'")
 
-      site.update_columns(clone_path: clone)
+      site.update_columns(clone_path: clone, repo_url: bare)
       yield clone
     end
   end

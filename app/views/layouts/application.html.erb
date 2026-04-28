@@ -21,6 +21,9 @@
           </span>
           <nav class="site-header__nav">
             <%= link_to "Posts", content_posts_path %>
+            <% if Current.site && Current.user.admin_of?(Current.site) %>
+              <%= link_to "Git status", git_status_path %>
+            <% end %>
           </nav>
           <div class="site-header__user">
             <span><%= Current.user.display_name.presence || Current.user.email_address %></span>
