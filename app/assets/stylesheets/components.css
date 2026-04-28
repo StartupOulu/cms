@@ -170,6 +170,34 @@
   }
 
 
+  .git-site {
+    margin-block-end: var(--space-10);
+    padding-block-end: var(--space-10);
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  .git-site:last-child {
+    border-block-end: none;
+  }
+
+  .git-site__heading {
+    display:     flex;
+    align-items: center;
+    gap:         var(--space-3);
+    margin-block-end: var(--space-5);
+  }
+
+  .git-site__indicator {
+    flex-shrink: 0;
+    width:  0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .git-site__indicator--ok    { background: oklch(60% 0.15 145); }
+  .git-site__indicator--error { background: oklch(58% 0.18 25); }
+
   .git-status__summary {
     padding:       var(--space-3) var(--space-4);
     border-radius: var(--radius);

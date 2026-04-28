@@ -4,45 +4,64 @@
   <h1>Git Status</h1>
 </div>
 
-<dl class="git-config">
-  <dt>Site</dt>
-  <dd>
-    <%= Current.site.name %>
-    <small>The CMS site whose Git integration is shown here.</small>
-  </dd>
-  <dt>Remote</dt>
-  <dd>
-    <code><%= Current.site.repo_url %></code>
-    <small>The website repository that published content is committed to. Must be accessible from this server.</small>
-  </dd>
-  <dt>Branch</dt>
-  <dd>
-    <code><%= Current.site.branch %></code>
-    <small>The branch that receives every publish commit. GitHub Pages typically builds from <code>main</code> or <code>gh-pages</code>.</small>
-  </dd>
-  <dt>Clone path</dt>
-  <dd>
-    <code><%= Current.site.clone_path %></code>
-    <small>The local directory on this server where the repository is cloned. The CMS reads, writes, and pushes from here.</small>
-  </dd>
-</dl>
-
-<div class="git-status">
-  <div class="git-status__summary git-status__summary--<%= @ok ? 'ok' : 'error' %>">
-    <%= @ok ? "Git integration is working." : "Git integration has a problem." %>
-  </div>
-
-  <ul class="git-checks">
-    <% @checks.each do |check| %>
-      <li class="git-check git-check--<%= check.ok ? 'ok' : 'error' %>">
-        <span class="git-check__indicator" aria-hidden="true"></span>
-        <div class="git-check__body">
-          <strong class="git-check__label"><%= check.label %></strong>
-          <% if check.error %>
-            <p class="git-check__error"><code><%= check.error %></code></p>
-          <% end %>
-        </div>
-      </li>
-    <% end %>
-  </ul>
+<div class="git-status__summary git-status__summary--<%= @all_ok ? 'ok' : 'error' %>">
+  <% if @sites_status.empty? %>
+    You are not an admin of any site.
+  <% elsif @all_ok %>
+    Git integration is working on all sites.
+  <% else %>
+    One or more sites have a Git problem.
+  <% end %>
 </div>
+
+<% @sites_status.each do |site, checks| %>
+  <% site_ok = checks.all?(&:ok) %>
+  <section class="git-site">
+    <h2 class="git-site__heading">
+      <span class="git-site__indicator git-site__indicator--<%= site_ok ? 'ok' : 'error' %>" aria-hidden="true"></span>
+      <%= site.name %>
+    </h2>
+
+    <dl class="git-config">
+      <dt>Remote</dt>
+      <dd>
+        <code><%= site.repo_url %></code>
+        <small>The website repository that published content is committed to. Must be accessible from this server.</small>
+      </dd>
+      <dt>Branch</dt>
+      <dd>
+        <code><%= site.branch %></code>
+        <small>The branch that receives every publish commit. GitHub Pages typically builds from <code>main</code> or <code>gh-pages</code>.</small>
+      </dd>
+      <dt>Clone path</dt>
+      <dd>
+        <code><%= site.clone_path %></code>
+        <small>The local directory on this server where the repository is cloned. The CMS reads, writes, and pushes from here.</small>
+      </dd>
+      <dt>Deploy key</dt>
+      <dd>
+        <% if site.deploy_key_path.present? %>
+          <code><%= site.deploy_key_path %></code>
+          <small>SSH private key used to authenticate pushes to the remote. The matching public key must be added to the repository's deploy keys.</small>
+        <% else %>
+          <span class="text-muted">None configured</span>
+          <small>No deploy key set — the server's default SSH key will be used. Fine for local testing; set a per-site deploy key in production.</small>
+        <% end %>
+      </dd>
+    </dl>
+
+    <ul class="git-checks">
+      <% checks.each do |check| %>
+        <li class="git-check git-check--<%= check.ok ? 'ok' : 'error' %>">
+          <span class="git-check__indicator" aria-hidden="true"></span>
+          <div class="git-check__body">
+            <strong class="git-check__label"><%= check.label %></strong>
+            <% if check.error %>
+              <p class="git-check__error"><code><%= check.error %></code></p>
+            <% end %>
+          </div>
+        </li>
+      <% end %>
+    </ul>
+  </section>
+<% end %>

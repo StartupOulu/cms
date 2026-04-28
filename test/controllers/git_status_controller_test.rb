@@ -7,7 +7,7 @@ class GitStatusControllerTest < ActionDispatch::IntegrationTest
     sign_in_as @admin
   end
 
-  test "GET /git_status succeeds for admin" do
+  test "GET /git_status succeeds" do
     get git_status_path
     assert_response :success
   end
@@ -28,10 +28,10 @@ class GitStatusControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "GET /git_status redirects non-admin" do
-    editor = users(:editor)
-    sign_in_as editor
+  test "GET /git_status shows no sites for a non-admin user" do
+    sign_in_as users(:editor)
     get git_status_path
-    assert_redirected_to root_path
+    assert_response :success
+    assert_select ".git-site", count: 0
   end
 end

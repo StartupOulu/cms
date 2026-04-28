@@ -50,4 +50,8 @@
     padding-inline: var(--space-1);
     border-radius: var(--radius);
   }
+
+  .text-muted {
+    color: var(--color-text-muted);
+  }
 }

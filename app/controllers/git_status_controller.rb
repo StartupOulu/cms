@@ -1,19 +1,7 @@
 class GitStatusController < ApplicationController
-  before_action :require_site
-  before_action :require_admin
-
   def show
-    @checks = Current.site.check_git
-    @ok = @checks.all?(&:ok)
-  end
-
-  private
-
-  def require_site
-    redirect_to root_path, alert: "No site configured." unless Current.site
-  end
-
-  def require_admin
-    redirect_to root_path, alert: "Not authorized." unless Current.user.admin_of?(Current.site)
+    admin_sites = Current.user.memberships.where(role: "admin").includes(:site).map(&:site)
+    @sites_status = admin_sites.map { |site| [ site, site.check_git ] }
+    @all_ok = @sites_status.all? { |_site, checks| checks.all?(&:ok) }
   end
 end
