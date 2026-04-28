@@ -23,12 +23,28 @@ module Content
       assert_response :success
     end
 
-    # --- create ---
+    # --- create (draft) ---
 
-    test "POST /content/posts publishes and redirects on success" do
+    test "POST /content/posts saves draft and redirects to edit" do
+      assert_difference "Content::Post.count" do
+        post content_posts_path, params: {
+          content_post: { title: "My Draft", body: "Hello world." }
+        }
+      end
+
+      saved = Content::Post.last
+      assert_redirected_to edit_content_post_path(saved)
+      assert_equal "Draft saved.", flash[:notice]
+      assert saved.draft?
+    end
+
+    # --- create (publish) ---
+
+    test "POST /content/posts with publish param publishes and redirects" do
       with_git_site(@site) do
         assert_difference "Content::Post.count" do
           post content_posts_path, params: {
+            publish: "1",
             content_post: { title: "Brand New Post", body: "Hello world." }
           }
         end
@@ -39,18 +55,22 @@ module Content
       end
     end
 
-    test "POST /content/posts re-renders new on invalid params" do
-      post content_posts_path, params: { content_post: { title: "", body: "" } }
-      assert_response :unprocessable_entity
-    end
-
-    test "POST /content/posts shows error and rolls back post when git publish fails" do
-      # Clone path in the fixture doesn't point to a real git repo, so publish raises.
-      assert_no_difference "Content::Post.count" do
+    test "POST /content/posts with publish saves draft and alerts when git fails" do
+      # Fixture clone_path is not a real repo — publish raises PublishError.
+      assert_difference "Content::Post.count" do
         post content_posts_path, params: {
+          publish: "1",
           content_post: { title: "Failing Post", body: "Body." }
         }
       end
+      saved = Content::Post.last
+      assert_redirected_to edit_content_post_path(saved)
+      assert saved.draft?
+      assert_match "publish failed", flash[:alert]
+    end
+
+    test "POST /content/posts re-renders new on invalid params" do
+      post content_posts_path, params: { content_post: { title: "", body: "" } }
       assert_response :unprocessable_entity
     end
 
@@ -61,15 +81,29 @@ module Content
       assert_response :success
     end
 
-    # --- update ---
+    # --- update (draft) ---
 
-    test "PATCH /content/posts/:id updates and redirects" do
+    test "PATCH /content/posts/:id saves draft and redirects to edit" do
+      patch content_post_path(@post), params: {
+        content_post: { title: "Updated Title", body: @post.body }
+      }
+
+      assert_redirected_to edit_content_post_path(@post)
+      assert_equal "Draft saved.", flash[:notice]
+      assert_equal "Updated Title", @post.reload.title
+    end
+
+    # --- update (publish) ---
+
+    test "PATCH /content/posts/:id with publish param publishes and redirects" do
       with_git_site(@site) do
         patch content_post_path(@post), params: {
+          publish: "1",
           content_post: { title: "Updated Title", body: @post.body }
         }
 
         assert_redirected_to content_posts_path
+        assert_equal "Post published.", flash[:notice]
         assert_equal "Updated Title", @post.reload.title
       end
     end

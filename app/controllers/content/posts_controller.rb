@@ -20,13 +20,15 @@ module Content
       @post.user = Current.user
 
       if @post.save
-        begin
-          @post.publish!
-          redirect_to content_posts_path, notice: "Post published."
-        rescue PublishError => e
-          @post.errors.add(:base, "Publish failed: #{e.message}")
-          @post.destroy
-          render :new, status: :unprocessable_entity
+        if params[:publish]
+          begin
+            @post.publish!
+            redirect_to content_posts_path, notice: "Post published."
+          rescue PublishError => e
+            redirect_to edit_content_post_path(@post), alert: "Draft saved, but publish failed: #{e.message}"
+          end
+        else
+          redirect_to edit_content_post_path(@post), notice: "Draft saved."
         end
       else
         render :new, status: :unprocessable_entity
@@ -38,12 +40,16 @@ module Content
 
     def update
       if @post.update(post_params)
-        begin
-          @post.publish!
-          redirect_to content_posts_path, notice: "Post published."
-        rescue PublishError => e
-          @post.errors.add(:base, "Publish failed: #{e.message}")
-          render :edit, status: :unprocessable_entity
+        if params[:publish]
+          begin
+            @post.publish!
+            redirect_to content_posts_path, notice: "Post published."
+          rescue PublishError => e
+            @post.errors.add(:base, "Publish failed: #{e.message}")
+            render :edit, status: :unprocessable_entity
+          end
+        else
+          redirect_to edit_content_post_path(@post), notice: "Draft saved."
         end
       else
         render :edit, status: :unprocessable_entity
@@ -62,7 +68,7 @@ module Content
     end
 
     def post_params
-      params.require(:content_post).permit(:title, :slug, :body)
+      params.require(:content_post).permit(:title, :slug, :description, :body)
     end
 
     def require_site

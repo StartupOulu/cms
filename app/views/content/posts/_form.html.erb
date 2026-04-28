@@ -20,12 +20,18 @@
   </div>
 
   <div class="field">
+    <%= f.label :description, "Description (optional summary)" %>
+    <%= f.text_area :description, rows: 3, placeholder: "Short summary shown in listings and social previews." %>
+  </div>
+
+  <div class="field">
     <%= f.label :body, "Content (Markdown)" %>
     <%= f.text_area :body, required: true, rows: 20 %>
   </div>
 
   <div class="form-actions">
-    <%= f.submit post.new_record? ? "Publish" : "Update", class: "button button--primary" %>
-    <%= link_to "Cancel", content_posts_path, class: "button button--secondary" %>
+    <%= f.submit "Save draft", name: nil, class: "button button--secondary" %>
+    <%= f.submit "Publish", name: :publish, class: "button button--primary" %>
+    <%= link_to "Cancel", content_posts_path, class: "button button--ghost" %>
   </div>
 <% end %>

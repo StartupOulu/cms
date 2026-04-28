@@ -97,5 +97,68 @@ module Content
         assert_equal original_published_at, post.reload.published_at
       end
     end
+
+    test "publish! snapshots description and slug into published_fields" do
+      unpublished = Content::Post.create!(site: site, user: users(:admin),
+                                          title: "Snappy Post", body: "Body.",
+                                          description: "A nice summary.")
+      with_git_site(site) do
+        Current.site    = site
+        Current.session = users(:admin).sessions.create!
+        unpublished.publish!
+
+        assert_equal "A nice summary.", unpublished.reload.published_description
+        assert_equal "snappy-post",     unpublished.reload.published_slug
+      end
+    end
+
+    test "publish! deletes old file when slug is renamed" do
+      with_git_site(site) do |clone|
+        Current.site    = site
+        Current.session = users(:admin).sessions.create!
+
+        post.publish!
+        old_path = File.join(clone, post.jekyll_path)
+        assert File.exist?(old_path)
+
+        post.update!(slug: "hello-world-renamed")
+        post.publish!
+
+        assert_not File.exist?(old_path), "old file should be removed on slug rename"
+        new_path = File.join(clone, post.jekyll_path)
+        assert File.exist?(new_path)
+      end
+    end
+
+    test "unpublish! removes file from repo and clears published_at" do
+      with_git_site(site) do |clone|
+        Current.site    = site
+        Current.session = users(:admin).sessions.create!
+
+        post.publish!
+        published_path = File.join(clone, post.jekyll_path)
+        assert File.exist?(published_path)
+
+        assert_difference "Audit::Event.count" do
+          post.unpublish!
+        end
+
+        assert_not File.exist?(published_path)
+        assert post.reload.draft?
+        assert_nil post.reload.published_fields
+      end
+    end
+
+    test "to_markdown includes description in front matter when present" do
+      post.description = "A great post."
+      md = post.to_markdown
+      assert_includes md, "description: A great post."
+    end
+
+    test "to_markdown omits description from front matter when blank" do
+      post.description = nil
+      md = post.to_markdown
+      assert_not_includes md, "description:"
+    end
   end
 end

@@ -63,11 +63,13 @@ class Site < ApplicationRecord
     checks
   end
 
-  def commit_and_push(files, message, author:)
+  def commit_and_push(files, message, author:, files_to_delete: [])
     with_publish_lock do
       in_repo do
         git "fetch", "origin"
         git "reset", "--hard", "origin/#{branch}"
+
+        files_to_delete.each { |path| git "rm", "--force", "--ignore-unmatch", path }
 
         files.each do |path, content|
           full_path = File.join(clone_path, path)

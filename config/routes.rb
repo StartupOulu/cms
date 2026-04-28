@@ -3,7 +3,9 @@ Rails.application.routes.draw do
   resources :passwords, param: :token
 
   namespace :content do
-    resources :posts
+    resources :posts do
+      resource :publication, only: [ :destroy ], controller: "posts/publications"
+    end
   end
 
   get "git_status" => "git_status#show", as: :git_status
