@@ -15,8 +15,9 @@ module Content
       site = self.site
       site.commit_and_push(jekyll_files, commit_message, author: site.publish_author)
 
-      touch(:published_at) unless published?
-      update_column(:published_at, Time.current)
+      # Only stamp published_at on first publish — subsequent updates preserve
+      # the original date so the Jekyll filename stays stable.
+      update_column(:published_at, Time.current) unless published?
 
       Audit::Event.record("publish", auditable: self, site: site, user: actor)
     end

@@ -20,7 +20,14 @@ module Content
       @post.user = Current.user
 
       if @post.save
-        publish_post
+        begin
+          @post.publish!
+          redirect_to content_posts_path, notice: "Post published."
+        rescue PublishError => e
+          @post.errors.add(:base, "Publish failed: #{e.message}")
+          @post.destroy
+          render :new, status: :unprocessable_entity
+        end
       else
         render :new, status: :unprocessable_entity
       end
@@ -31,7 +38,13 @@ module Content
 
     def update
       if @post.update(post_params)
-        publish_post
+        begin
+          @post.publish!
+          redirect_to content_posts_path, notice: "Post published."
+        rescue PublishError => e
+          @post.errors.add(:base, "Publish failed: #{e.message}")
+          render :edit, status: :unprocessable_entity
+        end
       else
         render :edit, status: :unprocessable_entity
       end
@@ -58,14 +71,6 @@ module Content
 
     def ensure_admin
       redirect_to content_posts_path, alert: "Not authorized." unless Current.user.admin_of?(Current.site)
-    end
-
-    def publish_post
-      @post.publish!
-      redirect_to content_posts_path, notice: "Post published."
-    rescue PublishError => e
-      @post.errors.add(:base, "Publish failed: #{e.message}")
-      render @post.new_record? ? :new : :edit, status: :unprocessable_entity
     end
   end
 end

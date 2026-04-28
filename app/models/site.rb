@@ -30,25 +30,36 @@ class Site < ApplicationRecord
   end
 
   def commit_and_push(files, message, author:)
-    in_repo do
-      git "fetch", "origin"
-      git "reset", "--hard", "origin/#{branch}"
+    with_publish_lock do
+      in_repo do
+        git "fetch", "origin"
+        git "reset", "--hard", "origin/#{branch}"
 
-      files.each do |path, content|
-        full_path = File.join(clone_path, path)
-        FileUtils.mkdir_p(File.dirname(full_path))
-        File.write(full_path, content)
-        git "add", path
+        files.each do |path, content|
+          full_path = File.join(clone_path, path)
+          FileUtils.mkdir_p(File.dirname(full_path))
+          File.write(full_path, content)
+          git "add", path
+        end
+
+        git "commit", "--author=#{author}", "-m", message
+        git "push", "origin", branch
       end
-
-      git "commit", "--author=#{author}", "-m", message
-      git "push", "origin", branch
     end
   end
 
   private
 
-  def in_repo(&)
+  def with_publish_lock
+    lock_path = Rails.root.join("shared", "locks", "#{slug}.lock")
+    FileUtils.mkdir_p(File.dirname(lock_path))
+    File.open(lock_path, File::RDWR | File::CREAT, 0o644) do |f|
+      f.flock(File::LOCK_EX)
+      yield
+    end
+  end
+
+  def in_repo
     FileUtils.mkdir_p(clone_path)
     yield
   end

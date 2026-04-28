@@ -84,5 +84,18 @@ module Content
         assert_equal unpublished.id,    event.auditable_id
       end
     end
+
+    test "publish! does not change published_at on a re-publish" do
+      with_git_site(site) do
+        Current.site    = site
+        Current.session = users(:admin).sessions.create!
+
+        original_published_at = post.published_at
+        post.update!(body: "Updated body.")
+        post.publish!
+
+        assert_equal original_published_at, post.reload.published_at
+      end
+    end
   end
 end

@@ -44,11 +44,13 @@ module Content
       assert_response :unprocessable_entity
     end
 
-    test "POST /content/posts shows error when git publish fails" do
+    test "POST /content/posts shows error and rolls back post when git publish fails" do
       # Clone path in the fixture doesn't point to a real git repo, so publish raises.
-      post content_posts_path, params: {
-        content_post: { title: "Failing Post", body: "Body." }
-      }
+      assert_no_difference "Content::Post.count" do
+        post content_posts_path, params: {
+          content_post: { title: "Failing Post", body: "Body." }
+        }
+      end
       assert_response :unprocessable_entity
     end
 
