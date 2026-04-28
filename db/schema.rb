@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_28_191744) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_28_192500) do
   create_table "audit_events", force: :cascade do |t|
     t.string "action", null: false
     t.bigint "auditable_id"
@@ -25,10 +25,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_28_191744) do
   end
 
   create_table "content_posts", force: :cascade do |t|
-    t.text "body"
+    t.text "blocks"
     t.datetime "created_at", null: false
     t.text "description"
     t.datetime "published_at"
+    t.text "published_blocks"
     t.text "published_fields"
     t.integer "site_id", null: false
     t.string "slug", null: false

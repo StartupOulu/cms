@@ -3,5 +3,5 @@ hello_world:
   user: admin
   title: Hello World
   slug: hello-world
-  body: "This is the first post."
+  blocks: '[{"type":"paragraph","content":"This is the first post."}]'
   published_at: 2026-04-01 10:00:00

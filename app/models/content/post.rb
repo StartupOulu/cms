@@ -4,15 +4,17 @@ module Content
 
     include Content::Publishable
 
+    serialize :blocks,           coder: JSON
+    serialize :published_blocks, coder: JSON
     serialize :published_fields, coder: JSON
 
     belongs_to :site
     belongs_to :user
 
-    validates :title, presence: true
-    validates :slug,  presence: true, uniqueness: { scope: :site_id },
-                      format: { with: /\A[a-z0-9-]+\z/, message: "only lowercase letters, numbers, and hyphens" }
-    validates :body,  presence: true
+    validates :title,  presence: true
+    validates :slug,   presence: true, uniqueness: { scope: :site_id },
+                       format: { with: /\A[a-z0-9-]+\z/, message: "only lowercase letters, numbers, and hyphens" }
+    validates :blocks, presence: true
 
     before_validation :generate_slug, if: -> { slug.blank? && title.present? }
 
@@ -29,10 +31,16 @@ module Content
 
     def save_published_snapshot!
       update_column(:published_fields, { "description" => description, "slug" => slug })
+      update_column(:published_blocks, blocks)
     end
 
     def clear_published_snapshot!
       update_column(:published_fields, nil)
+      update_column(:published_blocks, nil)
+    end
+
+    def pending_changes?
+      blocks != published_blocks
     end
 
     def published_slug
@@ -50,7 +58,7 @@ module Content
         "description" => description.presence
       }.compact
 
-      "#{front_matter.to_yaml}---\n\n#{body}"
+      "#{front_matter.to_yaml}---\n\n#{serialize_blocks(blocks)}"
     end
 
     private
@@ -65,6 +73,20 @@ module Content
 
     def generate_slug
       self.slug = title.downcase.gsub(/[^a-z0-9]+/, "-").gsub(/\A-+|-+\z/, "")
+    end
+
+    def serialize_blocks(blocks)
+      return "" if blocks.blank?
+      blocks.map { |b| serialize_block(b) }.compact.join("\n\n")
+    end
+
+    def serialize_block(block)
+      case block["type"]
+      when "paragraph" then block["content"].to_s
+      when "heading"   then "#{"#" * block["level"].to_i} #{block["content"]}"
+      when "ul"        then block["items"].map { |i| "- #{i}" }.join("\n")
+      when "ol"        then block["items"].each_with_index.map { |i, n| "#{n + 1}. #{i}" }.join("\n")
+      end
     end
   end
 end

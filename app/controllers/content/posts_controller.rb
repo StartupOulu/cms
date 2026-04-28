@@ -68,7 +68,11 @@ module Content
     end
 
     def post_params
-      params.require(:content_post).permit(:title, :slug, :description, :body)
+      p = params.require(:content_post).permit(:title, :slug, :description)
+      raw = params.dig(:content_post, :blocks)
+      p.merge(blocks: raw.present? ? JSON.parse(raw) : [])
+    rescue JSON::ParserError
+      p
     end
 
     def require_site

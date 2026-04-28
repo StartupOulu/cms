@@ -5,6 +5,7 @@ Rails.application.routes.draw do
   namespace :content do
     resources :posts do
       resource :publication, only: [ :destroy ], controller: "posts/publications"
+      resource :autosave,    only: [ :update ],  controller: "posts/autosaves"
     end
   end
 

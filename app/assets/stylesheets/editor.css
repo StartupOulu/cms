@@ -1,0 +1,147 @@
+@layer components {
+  /* ── Editor shell ─────────────────────────────── */
+  .editor {
+    display:        flex;
+    flex-direction: column;
+    gap:            var(--space-4);
+  }
+
+  .editor__toolbar {
+    display:         flex;
+    align-items:     center;
+    justify-content: flex-end;
+    min-block-size:  1.5rem;
+  }
+
+  .editor__status {
+    font-size:  var(--text-sm);
+    color:      var(--color-text-muted);
+  }
+
+  .editor__status[data-state="error"] {
+    color: var(--color-danger);
+  }
+
+  /* ── Canvas ───────────────────────────────────── */
+  .editor-canvas {
+    border:        1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding:       var(--space-6);
+    min-block-size: 16rem;
+    background:    var(--color-surface);
+  }
+
+  /* ── Individual block ─────────────────────────── */
+  .block {
+    position: relative;
+  }
+
+  /* contenteditable elements inside blocks */
+  .block__text {
+    display:    block;
+    width:      100%;
+    outline:    none;
+    min-height: 1.5em;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break:  break-word;
+  }
+
+  .block [contenteditable]:focus {
+    outline: none;
+  }
+
+  .block__text:empty::before {
+    content: attr(data-placeholder);
+    color:   var(--color-text-muted);
+    pointer-events: none;
+  }
+
+  /* List block */
+  .block__list {
+    padding-inline-start: var(--space-6);
+    margin-block: 0;
+  }
+
+  .block__list li {
+    outline: none;
+    min-height: 1.5em;
+    line-height: 1.7;
+  }
+
+  .block__list li:empty::before {
+    content: "List item";
+    color:   var(--color-text-muted);
+    pointer-events: none;
+  }
+
+  /* ── Between-block insert button ─────────────── */
+  .block-insert {
+    position:        relative;
+    display:         flex;
+    justify-content: flex-start;
+    padding-block:   var(--space-1);
+    opacity:         0;
+    transition:      opacity 0.1s;
+  }
+
+  .editor-canvas:hover .block-insert,
+  .block-insert--open {
+    opacity: 1;
+  }
+
+  .block-insert__btn {
+    appearance: none;
+    background: none;
+    border:     1px solid var(--color-border);
+    border-radius: 50%;
+    width:      1.25rem;
+    height:     1.25rem;
+    font-size:  0.85rem;
+    line-height: 1;
+    color:      var(--color-text-muted);
+    cursor:     pointer;
+    padding:    0;
+    display:    flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .block-insert__btn:hover {
+    background:   var(--color-border);
+    border-color: var(--color-text-muted);
+    color:        var(--color-text);
+  }
+
+  /* ── Block type menu ──────────────────────────── */
+  .block-menu {
+    position:      absolute;
+    inset-block-start: 100%;
+    inset-inline-start: 0;
+    z-index:       200;
+    background:    var(--color-surface);
+    border:        1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow:    0 4px 12px oklch(0% 0 0 / 0.08);
+    padding-block: var(--space-1);
+    min-inline-size: 10rem;
+    display:       flex;
+    flex-direction: column;
+  }
+
+  .block-menu button {
+    appearance:  none;
+    background:  none;
+    border:      none;
+    padding:     var(--space-2) var(--space-4);
+    text-align:  left;
+    font:        inherit;
+    font-size:   var(--text-sm);
+    color:       var(--color-text);
+    cursor:      pointer;
+  }
+
+  .block-menu button:hover {
+    background: var(--color-bg);
+  }
+}

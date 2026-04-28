@@ -1,3 +1,5 @@
+<% autosave_url = post.persisted? ? content_post_autosave_path(post) : nil %>
+
 <%= form_with model: post, url: post.new_record? ? content_posts_path : content_post_path(post) do |f| %>
   <% if post.errors.any? %>
     <div class="form-errors" role="alert">
@@ -20,17 +22,29 @@
   </div>
 
   <div class="field">
-    <%= f.label :description, "Description (optional summary)" %>
-    <%= f.text_area :description, rows: 3, placeholder: "Short summary shown in listings and social previews." %>
+    <%= f.label :blocks, "Content" %>
+    <div class="editor"
+         data-controller="block-editor"
+         data-block-editor-blocks-value="<%= (post.blocks || []).to_json %>"
+         data-block-editor-url-value="<%= autosave_url %>">
+      <div class="editor__toolbar">
+        <span class="editor__status" data-block-editor-target="status"></span>
+      </div>
+      <div class="editor-canvas" data-block-editor-target="canvas"></div>
+      <input type="hidden" name="content_post[blocks]" data-block-editor-target="input">
+    </div>
   </div>
 
   <div class="field">
-    <%= f.label :body, "Content (Markdown)" %>
-    <%= f.text_area :body, required: true, rows: 20 %>
+    <%= f.label :description, "Summary (optional)" %>
+    <%= f.text_area :description, rows: 3,
+                    placeholder: "Short summary shown in listings and social previews." %>
   </div>
 
   <div class="form-actions">
-    <%= f.submit "Save draft", name: nil, class: "button button--secondary" %>
+    <% if post.new_record? %>
+      <%= f.submit "Save draft", name: nil, class: "button button--secondary" %>
+    <% end %>
     <%= f.submit "Publish", name: :publish, class: "button button--primary" %>
     <%= link_to "Cancel", content_posts_path, class: "button button--ghost" %>
   </div>

@@ -2,6 +2,8 @@ require "test_helper"
 
 module Content
   class PostsControllerTest < ActionDispatch::IntegrationTest
+    BLOCKS_JSON = '[{"type":"paragraph","content":"Hello world."}]'
+
     setup do
       @user = users(:admin)
       @site = sites(:startupoulu)
@@ -28,7 +30,7 @@ module Content
     test "POST /content/posts saves draft and redirects to edit" do
       assert_difference "Content::Post.count" do
         post content_posts_path, params: {
-          content_post: { title: "My Draft", body: "Hello world." }
+          content_post: { title: "My Draft", blocks: BLOCKS_JSON }
         }
       end
 
@@ -45,7 +47,7 @@ module Content
         assert_difference "Content::Post.count" do
           post content_posts_path, params: {
             publish: "1",
-            content_post: { title: "Brand New Post", body: "Hello world." }
+            content_post: { title: "Brand New Post", blocks: BLOCKS_JSON }
           }
         end
 
@@ -56,11 +58,10 @@ module Content
     end
 
     test "POST /content/posts with publish saves draft and alerts when git fails" do
-      # Fixture clone_path is not a real repo — publish raises PublishError.
       assert_difference "Content::Post.count" do
         post content_posts_path, params: {
           publish: "1",
-          content_post: { title: "Failing Post", body: "Body." }
+          content_post: { title: "Failing Post", blocks: BLOCKS_JSON }
         }
       end
       saved = Content::Post.last
@@ -70,7 +71,7 @@ module Content
     end
 
     test "POST /content/posts re-renders new on invalid params" do
-      post content_posts_path, params: { content_post: { title: "", body: "" } }
+      post content_posts_path, params: { content_post: { title: "" } }
       assert_response :unprocessable_entity
     end
 
@@ -85,7 +86,7 @@ module Content
 
     test "PATCH /content/posts/:id saves draft and redirects to edit" do
       patch content_post_path(@post), params: {
-        content_post: { title: "Updated Title", body: @post.body }
+        content_post: { title: "Updated Title", blocks: BLOCKS_JSON }
       }
 
       assert_redirected_to edit_content_post_path(@post)
@@ -99,7 +100,7 @@ module Content
       with_git_site(@site) do
         patch content_post_path(@post), params: {
           publish: "1",
-          content_post: { title: "Updated Title", body: @post.body }
+          content_post: { title: "Updated Title", blocks: BLOCKS_JSON }
         }
 
         assert_redirected_to content_posts_path
