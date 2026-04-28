@@ -122,7 +122,7 @@ M1 to startupoulu.com before starting M2. Learn from real use.
 - Single admin user with a membership on the seeded site, password
   auth (Rails 8 generator)
 - Per-site git clone on the server (`shared/repos/<site-slug>/`)
-- `PublishService` writes markdown to `_posts/`, commits, pushes
+- `post.publish!` renders markdown and commits it to the site's repo; shared Git plumbing lives in a `Content::Publishable` concern (`app/models/concerns/content/publishable.rb`), included by both `Content::Post` and `Content::Event`; low-level `commit_and_push` lives on `Site` since it owns the clone path, deploy key, and branch
 - Synchronous publish in the request (2-second wait, no job queue)
 - Per-site file lock to serialize concurrent publishes
 - `Audit::Event` model logs every publish action, scoped to the site
@@ -340,6 +340,12 @@ The guiding line from DHH/37signals: **"Vanilla Rails is plenty."**
   Don't use `!` just to signal "this mutates" or "this is dangerous."
 - **Fat models, thin controllers.** Domain logic lives in models.
   Controllers orchestrate; they don't compute.
+- **No service objects — ever.** Don't create `app/services/` or any
+  class named `*Service`, `*Form`, `*Query`, `*Decorator`, or
+  `*Presenter`. These patterns exist because people don't trust their
+  models; trust your models. If behavior spans multiple models, it
+  belongs in a concern. If a method is growing long, extract private
+  methods or a well-named concern — not a new plain Ruby object.
 - **RESTful controllers.** Seven actions (index, show, new, create,
   edit, update, destroy). If you need a new verb, usually you need a
   new controller. E.g. `ReactionsController#destroy` beats
@@ -439,6 +445,9 @@ Apache 2.0.
 ## Conventions for AI agents
 
 - Don't add gems unless necessary. Prefer stdlib and Rails built-ins.
+- Never create service objects, form objects, query objects, decorators,
+  or presenters. No `app/services/`, no `*Service`, no `*Form`, no
+  `*Query`. Put logic in models; extract shared behavior into concerns.
 - Don't hardcode "startupoulu", and don't assume a single site. Use
   the `Site` model; scope queries by `Current.site`.
 - Don't interpolate user input into shell commands — use `Open3.capture3`

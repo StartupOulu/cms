@@ -262,7 +262,7 @@ on the server by hand.
 - Private half stored under `shared/ssh/<site-slug>/id_ed25519`.
 - `Site.deploy_key_path` records the private-key path; Git uses it
   via a per-repo `core.sshCommand` or a `GIT_SSH_COMMAND` env var
-  set by the publish service.
+  set by `Site#commit_and_push`.
 
 ### Persistence
 
