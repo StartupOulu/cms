@@ -1,0 +1,31 @@
+<%= form_with model: post, url: post.new_record? ? content_posts_path : content_post_path(post) do |f| %>
+  <% if post.errors.any? %>
+    <div class="form-errors" role="alert">
+      <ul>
+        <% post.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :title %>
+    <%= f.text_field :title, required: true, autofocus: true %>
+  </div>
+
+  <div class="field">
+    <%= f.label :slug, "URL slug" %>
+    <%= f.text_field :slug, placeholder: "auto-generated from title if blank" %>
+  </div>
+
+  <div class="field">
+    <%= f.label :body, "Content (Markdown)" %>
+    <%= f.text_area :body, required: true, rows: 20 %>
+  </div>
+
+  <div class="form-actions">
+    <%= f.submit post.new_record? ? "Publish" : "Update", class: "button button--primary" %>
+    <%= link_to "Cancel", content_posts_path, class: "button button--secondary" %>
+  </div>
+<% end %>

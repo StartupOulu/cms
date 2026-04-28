@@ -1,0 +1,9 @@
+admin_on_startupoulu:
+  user: admin
+  site: startupoulu
+  role: admin
+
+editor_on_startupoulu:
+  user: editor
+  site: startupoulu
+  role: editor

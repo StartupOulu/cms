@@ -1,0 +1,7 @@
+publish_hello_world:
+  site: startupoulu
+  user: admin
+  action: publish
+  auditable_type: Content::Post
+  auditable_id: <%= ActiveRecord::FixtureSet.identify(:hello_world) %>
+  created_at: 2026-04-01 10:00:01

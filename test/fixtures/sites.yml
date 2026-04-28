@@ -1,0 +1,9 @@
+startupoulu:
+  slug: startupoulu
+  name: StartupOulu
+  repo_url: git@github.com:startupoulu/startupoulu.github.io.git
+  branch: main
+  site_url: https://startupoulu.com
+  publish_author_name: CMS Bot
+  publish_author_email: cms@startupoulu.com
+  clone_path: /tmp/test-repos/startupoulu
