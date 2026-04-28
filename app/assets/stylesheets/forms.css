@@ -1,0 +1,79 @@
+@layer forms {
+  .field {
+    margin-block-end: var(--space-4);
+  }
+
+  .field label {
+    display:          block;
+    font-size:        var(--text-sm);
+    font-weight:      500;
+    margin-block-end: var(--space-1);
+  }
+
+  .field input[type="text"],
+  .field input[type="email"],
+  .field input[type="password"],
+  .field textarea {
+    display:          block;
+    inline-size:      100%;
+    padding:          var(--space-2) var(--space-3);
+    border:           1px solid var(--color-border);
+    border-radius:    var(--radius);
+    font:             inherit;
+    color:            var(--color-text);
+    background:       var(--color-surface);
+    transition:       border-color 0.15s;
+  }
+
+  .field input:focus,
+  .field textarea:focus {
+    outline:       none;
+    border-color:  var(--color-accent);
+    box-shadow:    0 0 0 3px oklch(52% 0.18 250 / 0.15);
+  }
+
+  .field textarea {
+    resize:      vertical;
+    font-family: var(--font-mono);
+    font-size:   var(--text-sm);
+    line-height: 1.5;
+  }
+
+  .form-errors {
+    padding:          var(--space-3) var(--space-4);
+    border-radius:    var(--radius);
+    background:       oklch(95% 0.05 20);
+    border:           1px solid oklch(80% 0.1 20);
+    color:            oklch(30% 0.1 20);
+    font-size:        var(--text-sm);
+    margin-block-end: var(--space-4);
+  }
+
+  .form-errors ul {
+    margin: 0;
+    padding-inline-start: var(--space-4);
+  }
+
+  .form-actions {
+    display:    flex;
+    gap:        var(--space-3);
+    align-items: center;
+    margin-block-start: var(--space-6);
+  }
+
+  /* Sign-in page */
+  .sign-in {
+    max-inline-size: 24rem;
+    margin-inline:   auto;
+    padding-block-start: var(--space-12);
+  }
+
+  .sign-in h1 {
+    margin-block-end: var(--space-6);
+  }
+
+  .sign-in .field input {
+    display: block;
+    inline-size: 100%;
+  }
+}

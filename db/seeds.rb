@@ -1,9 +1,11 @@
-# This file should ensure the existence of records required to run the application in every environment (production,
-# development, test). The code here should be idempotent so that it can be executed at any point in every environment.
-# The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
+# Seeds are not used for production bootstrapping.
+# To set up the first site and admin, use:
 #
-# Example:
+#   bin/rails cms:sites:create -- --slug=... --name=... --repo-url=... \
+#     --branch=main --site-url=... --publish-author="Name <email>"
 #
-#   ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
-#     MovieGenre.find_or_create_by!(name: genre_name)
-#   end
+# Then in the Rails console:
+#   user = User.create!(email_address: 'you@example.com', password: 'changeme', display_name: 'Your Name')
+#   Membership.create!(user: user, site: Site.last, role: 'admin')
+#
+# See README.md for the full setup walkthrough.

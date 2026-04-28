@@ -29,6 +29,9 @@ module Cms
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w[assets tasks])
 
+    config.i18n.default_locale = config_for(:cms)[:default_locale]&.to_sym || :fi
+    config.i18n.available_locales = %i[fi en]
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files

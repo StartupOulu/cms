@@ -12,7 +12,7 @@ class SiteTest < ActiveSupport::TestCase
   test "slug must be unique" do
     duplicate = Site.new(site.attributes.except("id", "created_at", "updated_at"))
     assert_not duplicate.valid?
-    assert_includes duplicate.errors[:slug], "has already been taken"
+    assert duplicate.errors[:slug].any?
   end
 
   test "slug only allows lowercase letters, numbers, and hyphens" do

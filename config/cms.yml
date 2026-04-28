@@ -1,0 +1,13 @@
+default: &default
+  name: "CMS"
+  default_locale: "fi"
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+  name: "CMS (test)"
+
+production:
+  <<: *default

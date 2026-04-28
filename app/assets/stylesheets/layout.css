@@ -1,0 +1,95 @@
+@layer layout {
+  /* ── Header ───────────────────────────────────── */
+  .site-header {
+    position:         sticky;
+    inset-block-start: 0;
+    z-index:          100;
+    block-size:       var(--header-height);
+    background:       var(--color-surface);
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  .site-header__inner {
+    max-inline-size: var(--content-width);
+    margin-inline:   auto;
+    padding-inline:  var(--space-6);
+    block-size:      100%;
+    display:         flex;
+    align-items:     center;
+    gap:             var(--space-6);
+  }
+
+  .site-header__brand {
+    font-weight: 600;
+    display:     flex;
+    align-items: center;
+    gap:         var(--space-2);
+  }
+
+  .site-header__site-name {
+    font-weight:  400;
+    color:        var(--color-text-muted);
+    font-size:    var(--text-sm);
+  }
+
+  .site-header__nav {
+    flex: 1;
+    display: flex;
+    gap: var(--space-4);
+  }
+
+  .site-header__user {
+    display:     flex;
+    align-items: center;
+    gap:         var(--space-3);
+    font-size:   var(--text-sm);
+    color:       var(--color-text-muted);
+  }
+
+  /* ── Flash messages ───────────────────────────── */
+  .flash-messages {
+    max-inline-size: var(--content-width);
+    margin-inline:   auto;
+    padding-inline:  var(--space-6);
+    padding-block:   var(--space-4) 0;
+  }
+
+  .flash {
+    padding:       var(--space-3) var(--space-4);
+    border-radius: var(--radius);
+    font-size:     var(--text-sm);
+    border:        1px solid transparent;
+  }
+
+  .flash--notice {
+    background: oklch(95% 0.05 145);
+    border-color: oklch(80% 0.1 145);
+    color: oklch(30% 0.1 145);
+  }
+
+  .flash--alert {
+    background: oklch(95% 0.05 20);
+    border-color: oklch(80% 0.1 20);
+    color: oklch(30% 0.1 20);
+  }
+
+  /* ── Main content ─────────────────────────────── */
+  .main-content {
+    max-inline-size: var(--content-width);
+    margin-inline:   auto;
+    padding-inline:  var(--space-6);
+    padding-block:   var(--space-8);
+  }
+
+  /* ── Page header row ──────────────────────────── */
+  .page-header {
+    display:        flex;
+    align-items:    baseline;
+    justify-content: space-between;
+    margin-block-end: var(--space-6);
+  }
+
+  .page-header h1 {
+    margin-block-end: 0;
+  }
+}
