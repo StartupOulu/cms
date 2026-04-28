@@ -1,4 +1,7 @@
-<% autosave_url = post.persisted? ? content_post_autosave_path(post) : nil %>
+<% autosave_url  = post.persisted? ? content_post_autosave_path(post)    : nil %>
+<% upload_url   = post.persisted? ? content_post_images_path(post)     : nil %>
+<% cover_upload = post.persisted? ? content_post_cover_image_path(post) : nil %>
+<% cover_delete = post.persisted? ? content_post_cover_image_path(post) : nil %>
 
 <%= form_with model: post, url: post.new_record? ? content_posts_path : content_post_path(post) do |f| %>
   <% if post.errors.any? %>
@@ -21,12 +24,44 @@
     <%= f.text_field :slug, placeholder: "auto-generated from title if blank" %>
   </div>
 
+  <%# Cover image %>
+  <% if post.persisted? %>
+    <div class="field">
+      <label>Cover image</label>
+      <div class="cover-image-slot"
+           data-controller="cover-image"
+           data-cover-image-upload-url-value="<%= cover_upload %>"
+           data-cover-image-delete-url-value="<%= cover_delete %>">
+
+        <img data-cover-image-target="preview"
+             src="<%= post.cover_image.attached? ? url_for(post.cover_image) : "" %>"
+             alt="Cover image"
+             class="cover-image-slot__preview"
+             style="<%= post.cover_image.attached? ? "" : "display:none" %>">
+
+        <div class="cover-image-slot__placeholder"
+             data-cover-image-target="placeholder"
+             style="<%= post.cover_image.attached? ? "display:none" : "" %>"
+             data-action="click->cover-image#pick">
+          <span>Click or drop image to upload</span>
+        </div>
+
+        <button type="button"
+                class="cover-image-slot__remove button button--ghost"
+                data-cover-image-target="removeBtn"
+                data-action="click->cover-image#remove"
+                style="<%= post.cover_image.attached? ? "" : "display:none" %>">Remove</button>
+      </div>
+    </div>
+  <% end %>
+
   <div class="field">
     <%= f.label :blocks, "Content" %>
     <div class="editor"
          data-controller="block-editor"
          data-block-editor-blocks-value="<%= (post.blocks || []).to_json %>"
-         data-block-editor-url-value="<%= autosave_url %>">
+         data-block-editor-url-value="<%= autosave_url %>"
+         data-block-editor-upload-url-value="<%= upload_url %>">
       <div class="editor__toolbar">
         <span class="editor__status" data-block-editor-target="status"></span>
       </div>

@@ -195,6 +195,54 @@ module Content
       assert_not post.pending_changes?
     end
 
+    # images
+
+    test "publish! commits cover image to repo and adds blog_image to front matter" do
+      with_git_site(site) do |clone|
+        Current.site    = site
+        Current.session = users(:admin).sessions.create!
+
+        post.cover_image.attach(
+          io:           File.open(Rails.root.join("test/fixtures/files/test.png")),
+          filename:     "cover.png",
+          content_type: "image/png"
+        )
+        post.publish!
+
+        md = File.read(File.join(clone, post.jekyll_path))
+        assert_includes md, "blog_image:"
+
+        key = post.cover_image.blob.key
+        assert File.exist?(File.join(clone, "assets/images/blogs/#{key}.png")),
+               "cover image should be committed to the repo"
+      end
+    end
+
+    test "publish! commits inline image block to repo and uses static path in markdown" do
+      with_git_site(site) do |clone|
+        Current.site    = site
+        Current.session = users(:admin).sessions.create!
+
+        blob = ActiveStorage::Blob.create_and_upload!(
+          io:           File.open(Rails.root.join("test/fixtures/files/test.png")),
+          filename:     "inline.png",
+          content_type: "image/png"
+        )
+        post.update!(blocks: [
+          { "type" => "paragraph", "content" => "Before." },
+          { "type" => "image", "signed_id" => blob.signed_id, "url" => "/fake", "alt" => "A photo" }
+        ])
+
+        post.publish!
+
+        md = File.read(File.join(clone, post.jekyll_path))
+        assert_includes md, "![A photo]"
+        assert_includes md, "assets/images/blogs/#{blob.key}.png"
+        assert File.exist?(File.join(clone, "assets/images/blogs/#{blob.key}.png")),
+               "inline image should be committed to the repo"
+      end
+    end
+
     # unpublish!
 
     test "unpublish! removes file from repo and clears published_at" do

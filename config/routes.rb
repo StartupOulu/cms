@@ -6,6 +6,8 @@ Rails.application.routes.draw do
     resources :posts do
       resource :publication, only: [ :destroy ], controller: "posts/publications"
       resource :autosave,    only: [ :update ],  controller: "posts/autosaves"
+      resource :cover_image, only: [ :update, :destroy ], controller: "posts/cover_images"
+      resources :images,     only: [ :create ],  controller: "posts/images"
     end
   end
 

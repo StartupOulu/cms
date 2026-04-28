@@ -75,6 +75,97 @@
     pointer-events: none;
   }
 
+  /* ── Cover image slot ────────────────────────── */
+  .cover-image-slot {
+    border:        1px dashed var(--color-border);
+    border-radius: var(--radius);
+    overflow:      hidden;
+    position:      relative;
+  }
+
+  .cover-image-slot__placeholder {
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    block-size:      10rem;
+    color:           var(--color-text-muted);
+    font-size:       var(--text-sm);
+    cursor:          pointer;
+    background:      var(--color-bg);
+  }
+
+  .cover-image-slot__placeholder:hover {
+    background: var(--color-border);
+  }
+
+  .cover-image-slot__preview {
+    display:    block;
+    width:      100%;
+    max-height: 20rem;
+    object-fit: cover;
+  }
+
+  .cover-image-slot__remove {
+    position: absolute;
+    inset-block-start: var(--space-2);
+    inset-inline-end:  var(--space-2);
+    background: var(--color-surface);
+    border:     1px solid var(--color-border);
+  }
+
+  [data-loading="true"] .cover-image-slot__placeholder {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* ── Image block ──────────────────────────────── */
+  .block__image-wrap {
+    border:        1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow:      hidden;
+  }
+
+  .block__image-preview {
+    display:    block;
+    width:      100%;
+    max-height: 24rem;
+    object-fit: contain;
+    background: var(--color-bg);
+  }
+
+  .block__image-alt {
+    display:    block;
+    width:      100%;
+    border:     none;
+    border-block-start: 1px solid var(--color-border);
+    padding:    var(--space-2) var(--space-3);
+    font:       inherit;
+    font-size:  var(--text-sm);
+    color:      var(--color-text-muted);
+    background: var(--color-surface);
+    outline:    none;
+  }
+
+  .block__image-placeholder {
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    block-size:      8rem;
+    color:           var(--color-text-muted);
+    font-size:       var(--text-sm);
+    background:      var(--color-bg);
+  }
+
+  .block__image-error {
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    gap:             var(--space-2);
+    block-size:      5rem;
+    color:           var(--color-danger);
+    font-size:       var(--text-sm);
+  }
+
   /* ── Between-block insert button ─────────────── */
   .block-insert {
     position:        relative;

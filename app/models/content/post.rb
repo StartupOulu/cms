@@ -11,10 +11,13 @@ module Content
     belongs_to :site
     belongs_to :user
 
+    has_one_attached :cover_image
+
     validates :title,  presence: true
     validates :slug,   presence: true, uniqueness: { scope: :site_id },
                        format: { with: /\A[a-z0-9-]+\z/, message: "only lowercase letters, numbers, and hyphens" }
     validates :blocks, presence: true
+    validate :cover_image_valid, if: -> { cover_image.attached? }
 
     before_validation :generate_slug, if: -> { slug.blank? && title.present? }
 
@@ -30,7 +33,11 @@ module Content
     end
 
     def save_published_snapshot!
-      update_column(:published_fields, { "description" => description, "slug" => slug })
+      update_column(:published_fields, {
+        "description" => description,
+        "slug"        => slug,
+        "cover_image" => cover_image_publish_path
+      }.compact)
       update_column(:published_blocks, blocks)
     end
 
@@ -55,7 +62,8 @@ module Content
       front_matter = {
         "layout"      => site.content_schema&.dig("posts", "layout") || "blog",
         "title"       => title,
-        "description" => description.presence
+        "description" => description.presence,
+        "blog_image"  => cover_image_publish_path
       }.compact
 
       "#{front_matter.to_yaml}---\n\n#{serialize_blocks(blocks)}"
@@ -64,11 +72,48 @@ module Content
     private
 
     def jekyll_files
-      { jekyll_path => to_markdown }
+      files = { jekyll_path => to_markdown }
+
+      if cover_image.attached?
+        files[cover_image_publish_path.delete_prefix("/")] = cover_image.blob.download
+      end
+
+      (blocks || []).each_with_index do |block, i|
+        next unless block["type"] == "image" && block["signed_id"].present?
+        blob = ActiveStorage::Blob.find_signed(block["signed_id"])
+        next unless blob
+        files[inline_image_path(blob).delete_prefix("/")] = blob.download
+      end
+
+      files
     end
 
     def commit_message
       published? ? "Update: #{title}" : "Publish: #{title}"
+    end
+
+    def cover_image_publish_path
+      return nil unless cover_image.attached?
+      ext = File.extname(cover_image.blob.filename.to_s)
+      "/assets/images/blogs/#{cover_image.blob.key}#{ext}"
+    end
+
+    def inline_image_path(blob)
+      ext = File.extname(blob.filename.to_s)
+      "/assets/images/blogs/#{blob.key}#{ext}"
+    end
+
+    COVER_IMAGE_TYPES = %w[image/jpeg image/png image/webp].freeze
+    COVER_IMAGE_MAX   = 10.megabytes
+
+    def cover_image_valid
+      blob = cover_image.blob
+      unless COVER_IMAGE_TYPES.include?(blob.content_type)
+        errors.add(:cover_image, "must be a JPEG, PNG, or WebP")
+      end
+      if blob.byte_size > COVER_IMAGE_MAX
+        errors.add(:cover_image, "must be smaller than 10 MB")
+      end
     end
 
     def generate_slug
@@ -86,6 +131,9 @@ module Content
       when "heading"   then "#{"#" * block["level"].to_i} #{block["content"]}"
       when "ul"        then block["items"].map { |i| "- #{i}" }.join("\n")
       when "ol"        then block["items"].each_with_index.map { |i, n| "#{n + 1}. #{i}" }.join("\n")
+      when "image"
+        blob = ActiveStorage::Blob.find_signed(block["signed_id"])
+        blob ? "![#{block["alt"].to_s}](#{inline_image_path(blob)})" : nil
       end
     end
   end

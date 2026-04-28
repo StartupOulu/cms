@@ -74,7 +74,7 @@ class Site < ApplicationRecord
         files.each do |path, content|
           full_path = File.join(clone_path, path)
           FileUtils.mkdir_p(File.dirname(full_path))
-          File.write(full_path, content)
+          File.binwrite(full_path, content)
           git "add", path
         end
 
