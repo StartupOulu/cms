@@ -6,13 +6,25 @@
 
 <dl class="git-config">
   <dt>Site</dt>
-  <dd><%= Current.site.name %></dd>
+  <dd>
+    <%= Current.site.name %>
+    <small>The CMS site whose Git integration is shown here.</small>
+  </dd>
   <dt>Remote</dt>
-  <dd><code><%= Current.site.repo_url %></code></dd>
+  <dd>
+    <code><%= Current.site.repo_url %></code>
+    <small>The website repository that published content is committed to. Must be accessible from this server.</small>
+  </dd>
   <dt>Branch</dt>
-  <dd><code><%= Current.site.branch %></code></dd>
+  <dd>
+    <code><%= Current.site.branch %></code>
+    <small>The branch that receives every publish commit. GitHub Pages typically builds from <code>main</code> or <code>gh-pages</code>.</small>
+  </dd>
   <dt>Clone path</dt>
-  <dd><code><%= Current.site.clone_path %></code></dd>
+  <dd>
+    <code><%= Current.site.clone_path %></code>
+    <small>The local directory on this server where the repository is cloned. The CMS reads, writes, and pushes from here.</small>
+  </dd>
 </dl>
 
 <div class="git-status">
