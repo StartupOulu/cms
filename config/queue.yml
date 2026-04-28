@@ -1,4 +1,7 @@
 default: &default
+  connects_to:
+    database:
+      writing: queue
   dispatchers:
     - polling_interval: 1
       batch_size: 500
