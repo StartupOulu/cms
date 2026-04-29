@@ -41,14 +41,16 @@ class Site < ApplicationRecord
     write_draft(post)
     dest = jekyll_preview_dest
     FileUtils.mkdir_p(dest)
-    _, stderr, status = Open3.capture3(
-      "jekyll", "build",
-      "--source",      clone_path,
-      "--destination", dest.to_s,
-      "--drafts",
-      "--incremental",
-      "--quiet"
-    )
+    _, stderr, status = Bundler.with_unbundled_env do
+      Open3.capture3(
+        "jekyll", "build",
+        "--source",      clone_path,
+        "--destination", dest.to_s,
+        "--drafts",
+        "--incremental",
+        "--quiet"
+      )
+    end
     raise PreviewError, stderr.presence || "jekyll build failed" unless status.success?
   rescue Errno::ENOENT
     raise PreviewError, "Jekyll is not installed. Run: gem install jekyll"
