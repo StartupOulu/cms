@@ -61,35 +61,50 @@ class SiteTest < ActiveSupport::TestCase
     end
   end
 
-  # write_draft
+  # render_preview
 
-  test "write_draft writes markdown to _drafts in the clone" do
+  test "render_preview renders post content through layout" do
     post = content_posts(:hello_world)
-    with_git_site(site) do |clone|
-      site.write_draft(post)
-      expected_path = File.join(clone, post.draft_path)
-      assert File.exist?(expected_path), "draft file should exist at #{expected_path}"
-      assert_includes File.read(expected_path), post.title
-    end
-  end
+    dir  = Dir.mktmpdir("cms-site-test")
+    FileUtils.mkdir_p(File.join(dir, "_layouts"))
+    File.write(
+      File.join(dir, "_layouts", "blog.html"),
+      "<html><head><title>{{ page.title }}</title></head><body>{{ content }}</body></html>"
+    )
+    site.update_column(:clone_path, dir)
 
-  # jekyll_draft_output_path
+    html = site.render_preview(post)
 
-  test "jekyll_draft_output_path finds the built HTML file by slug" do
-    post = content_posts(:hello_world)
-    dest = site.send(:jekyll_preview_dest)
-    html_path = File.join(dest, "2026", "04", "29", post.slug, "index.html")
-    FileUtils.mkdir_p(File.dirname(html_path))
-    File.write(html_path, "<html>preview</html>")
-
-    assert_equal html_path, site.jekyll_draft_output_path(post)
+    assert_includes html, post.title
+    assert_includes html, "<html>"
   ensure
-    FileUtils.rm_rf(dest)
+    FileUtils.rm_rf(dir)
   end
 
-  test "jekyll_draft_output_path returns nil when output does not exist" do
+  test "render_preview raises PreviewError when layout is missing" do
     post = content_posts(:hello_world)
-    FileUtils.rm_rf(site.send(:jekyll_preview_dest))
-    assert_nil site.jekyll_draft_output_path(post)
+    site.update_column(:clone_path, Dir.mktmpdir("cms-site-test"))
+
+    assert_raises(PreviewError) { site.render_preview(post) }
+  ensure
+    FileUtils.rm_rf(site.clone_path)
+  end
+
+  test "render_preview walks layout inheritance chain" do
+    post = content_posts(:hello_world)
+    dir  = Dir.mktmpdir("cms-site-test")
+    FileUtils.mkdir_p(File.join(dir, "_layouts"))
+    File.write(File.join(dir, "_layouts", "default.html"),
+               "<!DOCTYPE html><html><body>{{ content }}</body></html>")
+    File.write(File.join(dir, "_layouts", "blog.html"),
+               "---\nlayout: default\n---\n<article>{{ content }}</article>")
+    site.update_column(:clone_path, dir)
+
+    html = site.render_preview(post)
+
+    assert_includes html, "<!DOCTYPE html>"
+    assert_includes html, "<article>"
+  ensure
+    FileUtils.rm_rf(dir)
   end
 end

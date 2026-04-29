@@ -21,6 +21,9 @@ gem "bcrypt", "~> 3.1.7"
 # Translations for Rails built-ins (dates, errors, etc.)
 gem "rails-i18n"
 
+# Liquid templating for Jekyll layout rendering in preview
+gem "liquid"
+
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 

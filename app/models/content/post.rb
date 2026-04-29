@@ -62,13 +62,22 @@ module Content
       published_fields&.dig("description")
     end
 
+    def to_html_body
+      require "cgi"
+      (blocks || []).map { |b| block_to_html(b) }.compact.join("\n")
+    end
+
+    def blog_image_path
+      cover_image_publish_path || "/assets/images/blogs/blog-placeholder.png"
+    end
+
     def to_markdown
       front_matter = {
         "layout"      => site.content_schema&.dig("posts", "layout") || "blog",
         "title"       => title,
-        "description" => description.presence,
-        "blog_image"  => cover_image_publish_path
-      }.compact
+        "description" => description.to_s,
+        "blog_image"  => blog_image_path
+      }
 
       "#{front_matter.to_yaml}---\n\n#{serialize_blocks(blocks)}"
     end
@@ -122,6 +131,27 @@ module Content
 
     def generate_slug
       self.slug = title.downcase.gsub(/[^a-z0-9]+/, "-").gsub(/\A-+|-+\z/, "")
+    end
+
+    def block_to_html(block)
+      e = ->(s) { CGI.escapeHTML(s.to_s) }
+      case block["type"]
+      when "paragraph"
+        "<p>#{e.(block["content"])}</p>"
+      when "heading"
+        level = block["level"].to_i.clamp(1, 6)
+        "<h#{level}>#{e.(block["content"])}</h#{level}>"
+      when "ul"
+        items = block["items"].map { |i| "<li>#{e.(i)}</li>" }.join
+        "<ul>#{items}</ul>"
+      when "ol"
+        items = block["items"].map { |i| "<li>#{e.(i)}</li>" }.join
+        "<ol>#{items}</ol>"
+      when "image"
+        blob = ActiveStorage::Blob.find_signed(block["signed_id"])
+        return nil unless blob
+        "<figure><img src=\"#{inline_image_path(blob)}\" alt=\"#{e.(block["alt"])}\"></figure>"
+      end
     end
 
     def serialize_blocks(blocks)

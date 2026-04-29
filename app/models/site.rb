@@ -31,35 +31,19 @@ class Site < ApplicationRecord
     memberships.find_by(user: user)
   end
 
-  def write_draft(post)
-    path = File.join(clone_path, post.draft_path)
-    FileUtils.mkdir_p(File.dirname(path))
-    File.write(path, post.to_markdown)
-  end
+  def render_preview(post)
+    require "liquid"
+    require "yaml"
 
-  def jekyll_build_draft(post)
-    write_draft(post)
-    dest = jekyll_preview_dest
-    FileUtils.mkdir_p(dest)
-    _, stderr, status = Bundler.with_unbundled_env do
-      Open3.capture3(
-        "jekyll", "build",
-        "--source",      clone_path,
-        "--destination", dest.to_s,
-        "--drafts",
-        "--incremental",
-        "--quiet"
-      )
-    end
-    raise PreviewError, stderr.presence || "jekyll build failed" unless status.success?
-  rescue Errno::ENOENT
-    raise PreviewError, "Jekyll is not installed. Run: gem install jekyll"
-  rescue SystemCallError => e
+    config      = load_jekyll_config
+    page_vars   = preview_page_vars(post, config)
+    content_html = post.to_html_body
+
+    render_layout(page_vars["layout"] || "default", content_html, page_vars, config)
+  rescue PreviewError
+    raise
+  rescue => e
     raise PreviewError, e.message
-  end
-
-  def jekyll_draft_output_path(post)
-    Dir.glob(File.join(jekyll_preview_dest, "**", post.slug, "index.html")).first
   end
 
   def check_git
@@ -117,8 +101,53 @@ class Site < ApplicationRecord
 
   private
 
-  def jekyll_preview_dest
-    Rails.root.join("tmp", "jekyll-preview", slug)
+  def load_jekyll_config
+    path = File.join(clone_path, "_config.yml")
+    File.exist?(path) ? (YAML.safe_load_file(path) || {}) : {}
+  end
+
+  def preview_page_vars(post, config)
+    layout = config.dig("defaults")&.find { |d|
+      d.dig("scope", "type") == "posts"
+    }&.dig("values", "layout") || "blog"
+
+    {
+      "title"       => post.title,
+      "description" => post.description.to_s,
+      "blog_image"  => post.blog_image_path,
+      "layout"      => layout,
+      "url"         => "/#{Time.current.strftime("%Y/%m/%d")}/#{post.slug}/"
+    }
+  end
+
+  def render_layout(layout_name, content, page_vars, site_config, depth = 0)
+    raise PreviewError, "Layout nesting too deep" if depth > 5
+
+    layout_file = File.join(clone_path, "_layouts", "#{layout_name}.html")
+    unless File.exist?(layout_file)
+      raise PreviewError, "Layout '#{layout_name}' not found in #{clone_path}/_layouts/"
+    end
+
+    raw = File.read(layout_file)
+    layout_front_matter, layout_body = extract_front_matter(raw)
+
+    fs = Liquid::LocalFileSystem.new(File.join(clone_path, "_includes"), "%s")
+    template = Liquid::Template.parse(layout_body)
+    rendered = template.render(
+      { "page" => page_vars, "site" => site_config, "content" => content },
+      registers: { file_system: fs }
+    )
+
+    parent = layout_front_matter["layout"]
+    parent ? render_layout(parent, rendered, page_vars, site_config, depth + 1) : rendered
+  end
+
+  def extract_front_matter(source)
+    if source =~ /\A---\s*\n(.*?\n?)---\s*\n(.*)/m
+      [(YAML.safe_load($1) || {}), $2]
+    else
+      [{}, source]
+    end
   end
 
   def with_publish_lock

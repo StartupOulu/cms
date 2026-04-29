@@ -9,18 +9,30 @@ module Content
         sign_in_as users(:admin)
       end
 
-      test "GET /preview returns 503 when clone path is invalid" do
-        @site.update_column(:clone_path, "/nonexistent/path")
+      test "GET /preview returns 503 when layout is missing" do
+        # clone_path has no _layouts directory → PreviewError
+        @site.update_column(:clone_path, Dir.mktmpdir("cms-preview-test"))
         get content_post_preview_path(@post)
         assert_response :service_unavailable
+      ensure
+        FileUtils.rm_rf(@site.clone_path)
       end
 
-      test "GET /preview returns 503 when jekyll build fails" do
-        with_git_site(@site) do
-          # clone exists but has no _config.yml so jekyll build will fail
-          get content_post_preview_path(@post)
-          assert_response :service_unavailable
-        end
+      test "GET /preview renders HTML when layout exists" do
+        dir = Dir.mktmpdir("cms-preview-test")
+        FileUtils.mkdir_p(File.join(dir, "_layouts"))
+        File.write(
+          File.join(dir, "_layouts", "blog.html"),
+          "<html><body>{{ content }}</body></html>"
+        )
+        @site.update_column(:clone_path, dir)
+
+        get content_post_preview_path(@post)
+
+        assert_response :success
+        assert_match "<html>", response.body
+      ensure
+        FileUtils.rm_rf(dir)
       end
     end
   end
