@@ -54,11 +54,12 @@ class Site < ApplicationRecord
     require "liquid"
     require "yaml"
 
-    config      = load_jekyll_config
-    page_vars   = preview_page_vars(post, config)
+    config       = load_jekyll_config
+    page_vars    = preview_page_vars(post, config)
     content_html = post.to_html_body
 
-    render_layout(page_vars["layout"] || "default", content_html, page_vars, config)
+    html = render_layout(page_vars["layout"] || "default", content_html, page_vars, config)
+    inject_base_tag(html)
   rescue PreviewError
     raise
   rescue => e
@@ -163,6 +164,15 @@ class Site < ApplicationRecord
 
   # Jekyll allows unquoted include names: {% include header.html %}
   # Liquid requires quoted strings:      {% include 'header.html' %}
+  def inject_base_tag(html)
+    base = %(<base href="#{site_url}">)
+    if html =~ /<head[^>]*>/i
+      html.sub(/<head[^>]*>/i) { |tag| "#{tag}\n#{base}" }
+    else
+      "#{base}\n#{html}"
+    end
+  end
+
   def normalize_liquid(source)
     source.gsub(/(\{%-?\s*include\s+)(?!['"])([^\s%}'"]+)/) do
       "#{$1}'#{$2}'"
