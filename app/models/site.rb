@@ -23,6 +23,19 @@ class Site < ApplicationRecord
 
   GitCheck = Struct.new(:label, :ok, :error)
 
+  # Liquid's LocalFileSystem only allows [a-zA-Z0-9_/-] in include names,
+  # but Jekyll includes use full filenames with dots (e.g. header.html).
+  class JekyllFileSystem < Liquid::LocalFileSystem
+    def full_path(template_name)
+      raise Liquid::FileSystemError, "Illegal template name '#{template_name}'" unless
+        template_name =~ /\A[a-zA-Z0-9_\/\-\.]+\z/
+      full = File.join(root, @pattern % template_name)
+      raise Liquid::FileSystemError, "Illegal template path '#{full}'" unless
+        File.expand_path(full).start_with?(root)
+      full
+    end
+  end
+
   def publish_author
     "#{publish_author_name} <#{publish_author_email}>"
   end
@@ -131,7 +144,7 @@ class Site < ApplicationRecord
     raw = File.read(layout_file)
     layout_front_matter, layout_body = extract_front_matter(raw)
 
-    fs = Liquid::LocalFileSystem.new(File.join(clone_path, "_includes"), "%s")
+    fs = JekyllFileSystem.new(File.join(clone_path, "_includes"), "%s")
     template = Liquid::Template.parse(layout_body)
     rendered = template.render(
       { "page" => page_vars, "site" => site_config, "content" => content },
