@@ -26,12 +26,18 @@ class Site < ApplicationRecord
   # Liquid's LocalFileSystem only allows [a-zA-Z0-9_/-] in include names,
   # but Jekyll includes use full filenames with dots (e.g. header.html).
   class JekyllFileSystem < Liquid::LocalFileSystem
+    def read_template_file(template_name)
+      source = super
+      # Normalise Jekyll-style unquoted includes inside included files too
+      source.gsub(/(\{%-?\s*include\s+)(?!['"])([^\s%}'"]+)/) { "#{$1}'#{$2}'" }
+    end
+
     def full_path(template_name)
       raise Liquid::FileSystemError, "Illegal template name '#{template_name}'" unless
         template_name =~ /\A[a-zA-Z0-9_\/\-\.]+\z/
       full = File.join(root, @pattern % template_name)
       raise Liquid::FileSystemError, "Illegal template path '#{full}'" unless
-        File.expand_path(full).start_with?(root)
+        File.expand_path(full).start_with?(File.expand_path(root))
       full
     end
   end
@@ -145,7 +151,7 @@ class Site < ApplicationRecord
     layout_front_matter, layout_body = extract_front_matter(raw)
 
     fs = JekyllFileSystem.new(File.join(clone_path, "_includes"), "%s")
-    template = Liquid::Template.parse(layout_body)
+    template = Liquid::Template.parse(normalize_liquid(layout_body))
     rendered = template.render(
       { "page" => page_vars, "site" => site_config, "content" => content },
       registers: { file_system: fs }
@@ -153,6 +159,14 @@ class Site < ApplicationRecord
 
     parent = layout_front_matter["layout"]
     parent ? render_layout(parent, rendered, page_vars, site_config, depth + 1) : rendered
+  end
+
+  # Jekyll allows unquoted include names: {% include header.html %}
+  # Liquid requires quoted strings:      {% include 'header.html' %}
+  def normalize_liquid(source)
+    source.gsub(/(\{%-?\s*include\s+)(?!['"])([^\s%}'"]+)/) do
+      "#{$1}'#{$2}'"
+    end
   end
 
   def extract_front_matter(source)
