@@ -1,0 +1,1 @@
+class PreviewError < StandardError; end

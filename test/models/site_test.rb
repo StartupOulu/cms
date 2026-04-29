@@ -61,18 +61,6 @@ class SiteTest < ActiveSupport::TestCase
     end
   end
 
-  # jekyll_available?
-
-  test "jekyll_available? is false when jekyll_port is nil" do
-    site.jekyll_port = nil
-    assert_not site.jekyll_available?
-  end
-
-  test "jekyll_available? is true when jekyll_port is set" do
-    site.jekyll_port = 4001
-    assert site.jekyll_available?
-  end
-
   # write_draft
 
   test "write_draft writes markdown to _drafts in the clone" do
@@ -85,13 +73,23 @@ class SiteTest < ActiveSupport::TestCase
     end
   end
 
-  # jekyll_draft_url
+  # jekyll_draft_output_path
 
-  test "jekyll_draft_url includes port and slug" do
-    site.jekyll_port = 4001
+  test "jekyll_draft_output_path finds the built HTML file by slug" do
     post = content_posts(:hello_world)
-    url = site.jekyll_draft_url(post)
-    assert_match "localhost:4001", url
-    assert_match post.slug, url
+    dest = site.send(:jekyll_preview_dest)
+    html_path = File.join(dest, "2026", "04", "29", post.slug, "index.html")
+    FileUtils.mkdir_p(File.dirname(html_path))
+    File.write(html_path, "<html>preview</html>")
+
+    assert_equal html_path, site.jekyll_draft_output_path(post)
+  ensure
+    FileUtils.rm_rf(dest)
+  end
+
+  test "jekyll_draft_output_path returns nil when output does not exist" do
+    post = content_posts(:hello_world)
+    FileUtils.rm_rf(site.send(:jekyll_preview_dest))
+    assert_nil site.jekyll_draft_output_path(post)
   end
 end

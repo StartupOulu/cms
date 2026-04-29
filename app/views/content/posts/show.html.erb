@@ -22,9 +22,7 @@
 
 <div class="post-actions">
   <%= link_to "Edit", edit_content_post_path(@post), class: "button button--secondary" %>
-  <% if Current.site.jekyll_available? %>
-    <%= link_to "Preview", content_post_preview_path(@post), class: "button button--secondary", target: "_blank" %>
-  <% end %>
+  <%= link_to "Preview", content_post_preview_path(@post), class: "button button--secondary", target: "_blank" %>
   <% if @post.published? %>
     <%= button_to "Unpublish", content_post_publication_path(@post), method: :delete,
                   class: "button button--secondary",

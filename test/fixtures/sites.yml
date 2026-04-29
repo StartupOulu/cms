@@ -7,4 +7,3 @@ startupoulu:
   publish_author_name: CMS Bot
   publish_author_email: cms@startupoulu.com
   clone_path: /tmp/test-repos/startupoulu
-  jekyll_port:

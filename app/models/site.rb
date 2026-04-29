@@ -31,19 +31,33 @@ class Site < ApplicationRecord
     memberships.find_by(user: user)
   end
 
-  def jekyll_available?
-    jekyll_port.present?
-  end
-
   def write_draft(post)
     path = File.join(clone_path, post.draft_path)
     FileUtils.mkdir_p(File.dirname(path))
     File.write(path, post.to_markdown)
   end
 
-  def jekyll_draft_url(post)
-    date = Time.current.strftime("%Y/%m/%d")
-    "http://localhost:#{jekyll_port}/#{date}/#{post.slug}/"
+  def jekyll_build_draft(post)
+    write_draft(post)
+    dest = jekyll_preview_dest
+    FileUtils.mkdir_p(dest)
+    _, stderr, status = Open3.capture3(
+      "jekyll", "build",
+      "--source",      clone_path,
+      "--destination", dest.to_s,
+      "--drafts",
+      "--incremental",
+      "--quiet"
+    )
+    raise PreviewError, stderr.presence || "jekyll build failed" unless status.success?
+  rescue Errno::ENOENT
+    raise PreviewError, "Jekyll is not installed. Run: gem install jekyll"
+  rescue SystemCallError => e
+    raise PreviewError, e.message
+  end
+
+  def jekyll_draft_output_path(post)
+    Dir.glob(File.join(jekyll_preview_dest, "**", post.slug, "index.html")).first
   end
 
   def check_git
@@ -100,6 +114,10 @@ class Site < ApplicationRecord
   end
 
   private
+
+  def jekyll_preview_dest
+    Rails.root.join("tmp", "jekyll-preview", slug)
+  end
 
   def with_publish_lock
     lock_path = Rails.root.join("shared", "locks", "#{slug}.lock")

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_29_054054) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_29_071758) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -95,7 +95,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_054054) do
     t.text "content_schema"
     t.datetime "created_at", null: false
     t.string "deploy_key_path"
-    t.integer "jekyll_port"
     t.string "name", null: false
     t.string "publish_author_email", null: false
     t.string "publish_author_name", null: false

@@ -9,21 +9,17 @@ module Content
         sign_in_as users(:admin)
       end
 
-      test "GET /preview returns 503 when jekyll_port not configured" do
-        @site.update_column(:jekyll_port, nil)
+      test "GET /preview returns 503 when clone path is invalid" do
+        @site.update_column(:clone_path, "/nonexistent/path")
         get content_post_preview_path(@post)
         assert_response :service_unavailable
       end
 
-      test "GET /preview writes draft file and returns 503 when Jekyll not running" do
-        with_git_site(@site) do |clone|
-          @site.update_column(:jekyll_port, 19999) # port nothing listens on
-
+      test "GET /preview returns 503 when jekyll build fails" do
+        with_git_site(@site) do
+          # clone exists but has no _config.yml so jekyll build will fail
           get content_post_preview_path(@post)
-
           assert_response :service_unavailable
-          assert File.exist?(File.join(clone, @post.draft_path)),
-                 "draft file should be written even when Jekyll is not running"
         end
       end
     end
