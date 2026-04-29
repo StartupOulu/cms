@@ -21,12 +21,15 @@
           </span>
           <nav class="site-header__nav">
             <%= link_to "Posts", content_posts_path %>
-            <% if Current.site && Current.user.admin_of?(Current.site) %>
-              <%= link_to "Git status", git_status_path %>
-            <% end %>
+            <%= link_to "Events", content_events_path %>
           </nav>
           <div class="site-header__user">
-            <span><%= Current.user.display_name.presence || Current.user.email_address %></span>
+            <% label = Current.user.display_name.presence || Current.user.email_address %>
+            <% if Current.site && Current.user.admin_of?(Current.site) %>
+              <%= link_to label, git_status_path %>
+            <% else %>
+              <span><%= label %></span>
+            <% end %>
             <%= button_to "Sign out", session_path, method: :delete, class: "button button--ghost" %>
           </div>
         </div>

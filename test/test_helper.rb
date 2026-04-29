@@ -10,8 +10,9 @@ module ActiveSupport
     parallelize(workers: :number_of_processors)
 
     # Map fixture files for namespaced models so association labels resolve correctly.
-    set_fixture_class audit_events:   Audit::Event
-    set_fixture_class content_posts:  Content::Post
+    set_fixture_class audit_events:    Audit::Event
+    set_fixture_class content_posts:   Content::Post
+    set_fixture_class content_events:  Content::Event
 
     # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
     fixtures :all

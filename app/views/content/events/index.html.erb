@@ -1,0 +1,36 @@
+<div class="page-header">
+  <h1>Events</h1>
+  <%= link_to "New event", new_content_event_path, class: "button button--primary" %>
+</div>
+
+<% if @events.any? %>
+  <ul class="post-list">
+    <% @events.each do |event| %>
+      <li class="post-list__item">
+        <div class="post-list__body">
+          <div class="post-list__meta">
+            <span class="post-list__status <%= event.published? ? 'post-list__status--published' : 'post-list__status--draft' %>">
+              <%= event.published? ? "Published" : "Draft" %>
+            </span>
+            <time><%= event.start_time.strftime("%d %b %Y") %></time>
+            <% if event.location.present? %>
+              <span class="post-list__dot">·</span>
+              <span><%= event.location %></span>
+            <% end %>
+          </div>
+          <h2 class="post-list__title">
+            <%= link_to event.title, content_event_path(event) %>
+          </h2>
+          <% if event.excerpt.present? %>
+            <p class="post-list__description"><%= event.excerpt %></p>
+          <% end %>
+        </div>
+        <div class="post-list__actions">
+          <%= link_to "Edit", edit_content_event_path(event), class: "button button--secondary" %>
+        </div>
+      </li>
+    <% end %>
+  </ul>
+<% else %>
+  <p class="empty-state">No events yet. <%= link_to "Create your first event", new_content_event_path %>.</p>
+<% end %>

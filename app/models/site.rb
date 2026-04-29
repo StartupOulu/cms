@@ -8,8 +8,9 @@ class Site < ApplicationRecord
 
   has_many :memberships, dependent: :destroy
   has_many :users, through: :memberships
-  has_many :content_posts, class_name: "Content::Post", dependent: :destroy
-  has_many :audit_events, class_name: "Audit::Event", dependent: :destroy
+  has_many :content_posts,   class_name: "Content::Post",  dependent: :destroy
+  has_many :content_events,  class_name: "Content::Event", dependent: :destroy
+  has_many :audit_events,    class_name: "Audit::Event",   dependent: :destroy
 
   validates :slug,                 presence: true, uniqueness: true,
                                    format: { with: /\A[a-z0-9-]+\z/, message: "only lowercase letters, numbers, and hyphens" }
@@ -50,13 +51,13 @@ class Site < ApplicationRecord
     memberships.find_by(user: user)
   end
 
-  def render_preview(post)
+  def render_preview(record)
     require "liquid"
     require "yaml"
 
     config       = load_jekyll_config
-    page_vars    = preview_page_vars(post, config)
-    content_html = post.to_html_body
+    page_vars    = preview_page_vars(record, config)
+    content_html = record.to_html_body
 
     html = render_layout(page_vars["layout"] || "default", content_html, page_vars, config)
     inject_base_tag(html)
@@ -126,18 +127,35 @@ class Site < ApplicationRecord
     File.exist?(path) ? (YAML.safe_load_file(path) || {}) : {}
   end
 
-  def preview_page_vars(post, config)
-    layout = config.dig("defaults")&.find { |d|
-      d.dig("scope", "type") == "posts"
-    }&.dig("values", "layout") || "blog"
+  def preview_page_vars(record, config)
+    if record.is_a?(Content::Event)
+      layout = content_schema&.dig("events", "layout") || "event"
+      {
+        "title"        => record.title,
+        "description"  => record.description.to_s,
+        "excerpt"      => record.excerpt.to_s,
+        "cover_image"  => record.cover_image_bare_filename.to_s,
+        "start_time"   => record.start_time&.strftime("%Y-%m-%d %H:%M:%S"),
+        "end_time"     => record.end_time&.strftime("%Y-%m-%d %H:%M:%S"),
+        "location"     => record.location.to_s,
+        "cta_title"    => record.cta_title.to_s,
+        "cta_link"     => record.cta_link.to_s,
+        "layout"       => layout,
+        "url"          => "/_events/#{record.start_time&.strftime("%Y-%m")}-#{record.slug}.html"
+      }
+    else
+      layout = config.dig("defaults")&.find { |d|
+        d.dig("scope", "type") == "posts"
+      }&.dig("values", "layout") || "blog"
 
-    {
-      "title"       => post.title,
-      "description" => post.description.to_s,
-      "blog_image"  => post.blog_image_path,
-      "layout"      => layout,
-      "url"         => "/#{Time.current.strftime("%Y/%m/%d")}/#{post.slug}/"
-    }
+      {
+        "title"       => record.title,
+        "description" => record.description.to_s,
+        "blog_image"  => record.blog_image_path,
+        "layout"      => layout,
+        "url"         => "/#{Time.current.strftime("%Y/%m/%d")}/#{record.slug}/"
+      }
+    end
   end
 
   def render_layout(layout_name, content, page_vars, site_config, depth = 0)

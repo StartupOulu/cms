@@ -1,36 +1,52 @@
-<div class="post-header">
-  <h1><%= @post.title %></h1>
-  <div class="post-meta">
-    <% if @post.published? %>
-      <span>Published <%= @post.published_at.strftime("%d %b %Y") %></span>
-    <% else %>
-      <span class="post-list__status post-list__status--draft">Draft</span>
-    <% end %>
-    <% if @post.pending_changes? %>
-      <span class="post-list__status post-list__status--draft">Unpublished changes</span>
-    <% end %>
+<div class="post-back">
+  <%= link_to "← All posts", content_posts_path %>
+</div>
+
+<div class="post-detail">
+
+  <h1 class="post-detail__title"><%= @post.title %></h1>
+
+  <div class="post-detail__toolbar">
+    <div class="post-detail__toolbar-status">
+      <% if @post.published? %>
+        <span class="post-list__status post-list__status--published">Published</span>
+        <span class="sidebar-section__date"><%= @post.published_at.strftime("%d %b %Y") %></span>
+      <% else %>
+        <span class="post-list__status post-list__status--draft">Draft</span>
+      <% end %>
+      <% if @post.pending_changes? %>
+        <span class="post-list__dot">·</span>
+        <span class="sidebar-section__date">Unpublished changes</span>
+      <% end %>
+    </div>
+    <div class="post-detail__toolbar-actions">
+      <%= link_to "Edit", edit_content_post_path(@post), class: "button button--secondary" %>
+      <%= link_to "Preview ↗", content_post_preview_path(@post), class: "button button--secondary", target: "_blank" %>
+      <% if @post.published? %>
+        <%= button_to "Unpublish", content_post_publication_path(@post), method: :delete,
+                      class: "button button--secondary",
+                      form: { data: { turbo_confirm: "Remove this post from the live site?" } } %>
+      <% end %>
+      <% if Current.user.admin_of?(Current.site) %>
+        <%= button_to "Delete", content_post_path(@post), method: :delete,
+                      class: "button button--danger",
+                      form: { data: { turbo_confirm: "Delete this post permanently?" } } %>
+      <% end %>
+    </div>
   </div>
-</div>
 
-<% if @post.description.present? %>
-  <p class="post-description"><%= @post.description %></p>
-<% end %>
-
-<div class="post-body">
-  <%= render "blocks", blocks: (@post.blocks || []) %>
-</div>
-
-<div class="post-actions">
-  <%= link_to "Edit", edit_content_post_path(@post), class: "button button--secondary" %>
-  <%= link_to "Preview", content_post_preview_path(@post), class: "button button--secondary", target: "_blank" %>
-  <% if @post.published? %>
-    <%= button_to "Unpublish", content_post_publication_path(@post), method: :delete,
-                  class: "button button--secondary",
-                  form: { data: { turbo_confirm: "Remove this post from the live site?" } } %>
+  <% if @post.cover_image.attached? %>
+    <div class="post-detail__cover">
+      <%= image_tag url_for(@post.cover_image), alt: @post.title %>
+    </div>
   <% end %>
-  <% if Current.user.admin_of?(Current.site) %>
-    <%= button_to "Delete", content_post_path(@post), method: :delete,
-                  class: "button button--danger",
-                  form: { data: { turbo_confirm: "Delete this post permanently?" } } %>
+
+  <% if @post.description.present? %>
+    <p class="post-detail__description"><%= @post.description %></p>
   <% end %>
+
+  <div class="post-detail__body">
+    <%= render "blocks", blocks: (@post.blocks || []) %>
+  </div>
+
 </div>

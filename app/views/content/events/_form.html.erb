@@ -1,0 +1,104 @@
+<% cover_upload = event.persisted? ? content_event_cover_image_path(event) : nil %>
+<% cover_delete = event.persisted? ? content_event_cover_image_path(event) : nil %>
+
+<%= form_with model: event, url: event.new_record? ? content_events_path : content_event_path(event) do |f| %>
+  <% if event.errors.any? %>
+    <div class="form-errors" role="alert">
+      <ul>
+        <% event.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :title %>
+    <%= f.text_field :title, required: true, autofocus: true %>
+  </div>
+
+  <div class="field">
+    <%= f.label :slug, "URL slug" %>
+    <%= f.text_field :slug, placeholder: "auto-generated from title if blank" %>
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <%= f.label :start_time, "Start" %>
+      <%= f.datetime_local_field :start_time, required: true %>
+    </div>
+
+    <div class="field">
+      <%= f.label :end_time, "End (optional)" %>
+      <%= f.datetime_local_field :end_time %>
+    </div>
+  </div>
+
+  <div class="field">
+    <%= f.label :location, "Location (optional)" %>
+    <%= f.text_field :location, placeholder: "e.g. Oulu, Tellus Arena" %>
+  </div>
+
+  <% if event.persisted? %>
+    <div class="field">
+      <label>Cover image</label>
+      <div class="cover-image-slot"
+           data-controller="cover-image"
+           data-cover-image-upload-url-value="<%= cover_upload %>"
+           data-cover-image-delete-url-value="<%= cover_delete %>">
+
+        <img data-cover-image-target="preview"
+             src="<%= event.cover_image.attached? ? url_for(event.cover_image) : "" %>"
+             alt="Cover image"
+             class="cover-image-slot__preview"
+             style="<%= event.cover_image.attached? ? "" : "display:none" %>">
+
+        <div class="cover-image-slot__placeholder"
+             data-cover-image-target="placeholder"
+             style="<%= event.cover_image.attached? ? "display:none" : "" %>"
+             data-action="click->cover-image#pick">
+          <span>Click or drop image to upload</span>
+        </div>
+
+        <button type="button"
+                class="cover-image-slot__remove button button--ghost"
+                data-cover-image-target="removeBtn"
+                data-action="click->cover-image#remove"
+                style="<%= event.cover_image.attached? ? "" : "display:none" %>">Remove</button>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :excerpt, "Excerpt (optional)" %>
+    <%= f.text_area :excerpt, rows: 2,
+                    placeholder: "Short text shown in event listings." %>
+  </div>
+
+  <div class="field">
+    <%= f.label :description, "Description (optional)" %>
+    <%= f.text_area :description, rows: 5,
+                    placeholder: "Full event description shown on the event page." %>
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <%= f.label :cta_title, "Button label (optional)" %>
+      <%= f.text_field :cta_title, placeholder: "e.g. Register now" %>
+    </div>
+
+    <div class="field">
+      <%= f.label :cta_link, "Button URL (optional)" %>
+      <%= f.url_field :cta_link, placeholder: "https://…" %>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <% if event.new_record? %>
+      <%= f.submit "Save draft", name: nil, class: "button button--secondary" %>
+    <% end %>
+    <%= f.submit "Publish", name: :publish, class: "button button--primary" %>
+    <%= f.submit "Save", name: nil, class: "button button--secondary" unless event.new_record? %>
+    <%= link_to "Cancel", content_events_path, class: "button button--ghost" %>
+  </div>
+<% end %>

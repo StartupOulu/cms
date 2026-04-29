@@ -61,6 +61,32 @@
     margin-block-start: var(--space-6);
   }
 
+  .field-row {
+    display:   grid;
+    grid-template-columns: 1fr 1fr;
+    gap:       var(--space-4);
+  }
+
+  .field input[type="datetime-local"],
+  .field input[type="url"] {
+    display:          block;
+    inline-size:      100%;
+    padding:          var(--space-2) var(--space-3);
+    border:           1px solid var(--color-border);
+    border-radius:    var(--radius);
+    font:             inherit;
+    color:            var(--color-text);
+    background:       var(--color-surface);
+    transition:       border-color 0.15s;
+  }
+
+  .field input[type="datetime-local"]:focus,
+  .field input[type="url"]:focus {
+    outline:       none;
+    border-color:  var(--color-accent);
+    box-shadow:    0 0 0 3px oklch(52% 0.18 250 / 0.15);
+  }
+
   /* Sign-in page */
   .sign-in {
     max-inline-size: 24rem;

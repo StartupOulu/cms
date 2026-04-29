@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_29_071758) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_29_104834) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -50,6 +50,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_071758) do
     t.index ["site_id", "created_at"], name: "index_audit_events_on_site_id_and_created_at"
     t.index ["site_id"], name: "index_audit_events_on_site_id"
     t.index ["user_id"], name: "index_audit_events_on_user_id"
+  end
+
+  create_table "content_events", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "cta_link"
+    t.string "cta_title"
+    t.text "description"
+    t.datetime "end_time"
+    t.text "excerpt"
+    t.string "location"
+    t.datetime "published_at"
+    t.text "published_fields"
+    t.integer "site_id", null: false
+    t.string "slug", null: false
+    t.datetime "start_time", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["site_id", "slug"], name: "index_content_events_on_site_id_and_slug", unique: true
+    t.index ["site_id"], name: "index_content_events_on_site_id"
+    t.index ["user_id"], name: "index_content_events_on_user_id"
   end
 
   create_table "content_posts", force: :cascade do |t|
@@ -118,6 +139,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_071758) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "audit_events", "sites"
   add_foreign_key "audit_events", "users"
+  add_foreign_key "content_events", "sites"
+  add_foreign_key "content_events", "users"
   add_foreign_key "content_posts", "sites"
   add_foreign_key "content_posts", "users"
   add_foreign_key "memberships", "sites"

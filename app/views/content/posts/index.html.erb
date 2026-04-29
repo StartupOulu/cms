@@ -7,17 +7,28 @@
   <ul class="post-list">
     <% @posts.each do |post| %>
       <li class="post-list__item">
-        <div class="post-list__meta">
-          <span class="post-list__status <%= post.published? ? 'post-list__status--published' : 'post-list__status--draft' %>">
-            <%= post.published? ? "Published" : "Draft" %>
-          </span>
-          <time><%= post.published_at&.strftime("%d %b %Y") %></time>
+        <div class="post-list__body">
+          <div class="post-list__meta">
+            <span class="post-list__status <%= post.published? ? 'post-list__status--published' : 'post-list__status--draft' %>">
+              <%= post.published? ? "Published" : "Draft" %>
+            </span>
+            <% if post.published_at %>
+              <time><%= post.published_at.strftime("%d %b %Y") %></time>
+            <% end %>
+            <% if post.pending_changes? %>
+              <span class="post-list__dot">·</span>
+              <span>Unpublished changes</span>
+            <% end %>
+          </div>
+          <h2 class="post-list__title">
+            <%= link_to post.title, content_post_path(post) %>
+          </h2>
+          <% if post.description.present? %>
+            <p class="post-list__description"><%= post.description %></p>
+          <% end %>
         </div>
-        <h2 class="post-list__title">
-          <%= link_to post.title, content_post_path(post) %>
-        </h2>
         <div class="post-list__actions">
-          <%= link_to "Edit", edit_content_post_path(post) %>
+          <%= link_to "Edit", edit_content_post_path(post), class: "button button--secondary" %>
         </div>
       </li>
     <% end %>

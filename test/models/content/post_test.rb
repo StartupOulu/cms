@@ -99,9 +99,13 @@ module Content
       assert_includes post.to_markdown, "description: A great post."
     end
 
-    test "to_markdown omits description from front matter when blank" do
+    test "to_markdown includes empty description field when blank" do
       post.description = nil
-      assert_not_includes post.to_markdown, "description:"
+      assert_includes post.to_markdown, "description: ''"
+    end
+
+    test "to_markdown always includes blog_image field" do
+      assert_includes post.to_markdown, "blog_image:"
     end
 
     # publish!

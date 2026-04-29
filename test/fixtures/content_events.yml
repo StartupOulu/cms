@@ -1,0 +1,9 @@
+tech_meetup:
+  site: startupoulu
+  user: admin
+  title: Tech Meetup July 2026
+  slug: tech-meetup-july-2026
+  start_time: 2026-07-15 17:00:00
+  end_time: 2026-07-15 20:00:00
+  location: Oulu, Tellus Arena
+  excerpt: Monthly tech meetup for Oulu's startup community.

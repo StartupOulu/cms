@@ -54,28 +54,46 @@
 
   /* ── Post list ────────────────────────────────── */
   .post-list {
-    list-style: none;
-    padding:    0;
-    margin:     0;
+    list-style:     none;
+    padding:        0;
+    margin:         0;
+    display:        flex;
+    flex-direction: column;
+    gap:            var(--space-2);
   }
 
   .post-list__item {
-    padding-block: var(--space-4);
-    border-block-end: 1px solid var(--color-border);
-    display: grid;
-    gap: var(--space-1);
+    display:       flex;
+    align-items:   center;
+    gap:           var(--space-4);
+    padding:       var(--space-4) var(--space-5);
+    background:    var(--color-surface);
+    border:        1px solid var(--color-border);
+    border-radius: var(--radius);
+    transition:    border-color 0.1s;
   }
 
-  .post-list__item:last-child {
-    border-block-end: none;
+  .post-list__item:hover {
+    border-color: var(--color-text-muted);
+  }
+
+  .post-list__body {
+    flex:            1;
+    min-inline-size: 0;
+    display:         grid;
+    gap:             var(--space-1);
   }
 
   .post-list__meta {
     display:     flex;
     align-items: center;
-    gap:         var(--space-3);
+    gap:         var(--space-2);
     font-size:   var(--text-sm);
     color:       var(--color-text-muted);
+  }
+
+  .post-list__dot {
+    line-height: 1;
   }
 
   .post-list__status {
@@ -111,34 +129,97 @@
     color: var(--color-accent);
   }
 
+  .post-list__description {
+    margin:        0;
+    font-size:     var(--text-sm);
+    color:         var(--color-text-muted);
+    overflow:      hidden;
+    white-space:   nowrap;
+    text-overflow: ellipsis;
+  }
+
   .post-list__actions {
-    font-size: var(--text-sm);
+    flex-shrink: 0;
   }
 
   /* ── Post show ────────────────────────────────── */
-  .post-header {
+  .post-back {
+    margin-block-end: var(--space-5);
+    font-size:        var(--text-sm);
+  }
+
+  .post-back a {
+    color:           var(--color-text-muted);
+    text-decoration: none;
+  }
+
+  .post-back a:hover {
+    color: var(--color-text);
+  }
+
+  .post-detail {
+    display:        flex;
+    flex-direction: column;
+    gap:            var(--space-6);
+  }
+
+  .post-detail__toolbar {
+    display:         flex;
+    align-items:     center;
+    justify-content: space-between;
+    gap:             var(--space-4);
+    padding-block:   var(--space-4);
+    border-block:    1px solid var(--color-border);
+  }
+
+  .post-detail__toolbar-status {
+    display:     flex;
+    align-items: center;
+    gap:         var(--space-2);
+    font-size:   var(--text-sm);
+    color:       var(--color-text-muted);
+  }
+
+  .post-detail__toolbar-actions {
+    display:     flex;
+    align-items: center;
+    gap:         var(--space-2);
+    flex-shrink: 0;
+  }
+
+  .post-detail__cover {
     margin-block-end: var(--space-6);
+    border-radius:    var(--radius);
+    overflow:         hidden;
+    border:           1px solid var(--color-border);
+  }
+
+  .post-detail__cover img {
+    display:    block;
+    width:      100%;
+    max-height: 22rem;
+    object-fit: cover;
+  }
+
+  .post-detail__title {
+    margin-block-end: var(--space-3);
+  }
+
+  .post-detail__description {
+    color:            var(--color-text-muted);
+    font-style:       italic;
+    margin-block:     0 var(--space-6);
     padding-block-end: var(--space-6);
     border-block-end: 1px solid var(--color-border);
   }
 
-  .post-meta {
-    color:     var(--color-text-muted);
-    font-size: var(--text-sm);
-    margin-block-start: var(--space-2);
-  }
-
-  .post-body {
-    margin-block-end: var(--space-8);
+  .post-detail__body {
     line-height: 1.75;
   }
 
-  .post-actions {
-    display:    flex;
-    gap:        var(--space-3);
-    align-items: center;
-    padding-block-start: var(--space-6);
-    border-block-start: 1px solid var(--color-border);
+  .sidebar-section__date {
+    font-size: var(--text-sm);
+    color:     var(--color-text-muted);
   }
 
   /* ── Git status ───────────────────────────────── */
@@ -259,6 +340,24 @@
     font-size:   0.85em;
     white-space: pre-wrap;
     word-break:  break-all;
+  }
+
+  /* ── Event meta ──────────────────────────────── */
+  .event-meta {
+    display:              grid;
+    grid-template-columns: max-content 1fr;
+    gap:                  var(--space-1) var(--space-5);
+    font-size:            var(--text-sm);
+    margin-block-end:     var(--space-5);
+  }
+
+  .event-meta dt {
+    color:       var(--color-text-muted);
+    font-weight: 500;
+  }
+
+  .event-meta dd {
+    margin: 0;
   }
 
   /* ── Empty state ──────────────────────────────── */
