@@ -31,6 +31,21 @@ class Site < ApplicationRecord
     memberships.find_by(user: user)
   end
 
+  def jekyll_available?
+    jekyll_port.present?
+  end
+
+  def write_draft(post)
+    path = File.join(clone_path, post.draft_path)
+    FileUtils.mkdir_p(File.dirname(path))
+    File.write(path, post.to_markdown)
+  end
+
+  def jekyll_draft_url(post)
+    date = Time.current.strftime("%Y/%m/%d")
+    "http://localhost:#{jekyll_port}/#{date}/#{post.slug}/"
+  end
+
   def check_git
     checks = []
 

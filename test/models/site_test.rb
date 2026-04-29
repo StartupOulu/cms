@@ -60,4 +60,38 @@ class SiteTest < ActiveSupport::TestCase
       assert_equal 3, checks.length
     end
   end
+
+  # jekyll_available?
+
+  test "jekyll_available? is false when jekyll_port is nil" do
+    site.jekyll_port = nil
+    assert_not site.jekyll_available?
+  end
+
+  test "jekyll_available? is true when jekyll_port is set" do
+    site.jekyll_port = 4001
+    assert site.jekyll_available?
+  end
+
+  # write_draft
+
+  test "write_draft writes markdown to _drafts in the clone" do
+    post = content_posts(:hello_world)
+    with_git_site(site) do |clone|
+      site.write_draft(post)
+      expected_path = File.join(clone, post.draft_path)
+      assert File.exist?(expected_path), "draft file should exist at #{expected_path}"
+      assert_includes File.read(expected_path), post.title
+    end
+  end
+
+  # jekyll_draft_url
+
+  test "jekyll_draft_url includes port and slug" do
+    site.jekyll_port = 4001
+    post = content_posts(:hello_world)
+    url = site.jekyll_draft_url(post)
+    assert_match "localhost:4001", url
+    assert_match post.slug, url
+  end
 end

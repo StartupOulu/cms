@@ -6,6 +6,9 @@
     <% else %>
       <span class="post-list__status post-list__status--draft">Draft</span>
     <% end %>
+    <% if @post.pending_changes? %>
+      <span class="post-list__status post-list__status--draft">Unpublished changes</span>
+    <% end %>
   </div>
 </div>
 
@@ -14,11 +17,14 @@
 <% end %>
 
 <div class="post-body">
-  <%= simple_format(@post.body) %>
+  <%= render "blocks", blocks: (@post.blocks || []) %>
 </div>
 
 <div class="post-actions">
   <%= link_to "Edit", edit_content_post_path(@post), class: "button button--secondary" %>
+  <% if Current.site.jekyll_available? %>
+    <%= link_to "Preview", content_post_preview_path(@post), class: "button button--secondary", target: "_blank" %>
+  <% end %>
   <% if @post.published? %>
     <%= button_to "Unpublish", content_post_publication_path(@post), method: :delete,
                   class: "button button--secondary",

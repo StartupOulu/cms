@@ -26,6 +26,10 @@ module Content
       "_posts/#{date}-#{slug}.markdown"
     end
 
+    def draft_path
+      "_drafts/#{slug}.markdown"
+    end
+
     def jekyll_files_to_delete
       return [] unless published? && published_slug && published_slug != slug
       date = published_at.strftime("%Y-%m-%d")

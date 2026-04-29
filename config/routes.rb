@@ -8,6 +8,7 @@ Rails.application.routes.draw do
       resource :autosave,    only: [ :update ],  controller: "posts/autosaves"
       resource :cover_image, only: [ :update, :destroy ], controller: "posts/cover_images"
       resources :images,     only: [ :create ],  controller: "posts/images"
+      resource :preview,     only: [ :show ],    controller: "posts/previews"
     end
   end
 
