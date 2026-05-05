@@ -223,8 +223,6 @@ each other on Slack.
 - Publish-failure surfacing: a persistent dashboard banner when a
   publish errored, until an admin acknowledges it (M1 already shows
   the inline editor error; this is the team-level surface)
-- Basic search over posts and events — SQLite FTS5 on title, slug,
-  and body text
 
 **Done when:** someone visits `/` and sees "Maria published *Foo* 2
 hours ago" and feels oriented.

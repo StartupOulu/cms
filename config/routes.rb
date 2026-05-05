@@ -21,9 +21,11 @@ Rails.application.routes.draw do
     end
   end
 
+  resource :publish_failure_acknowledgments, only: [ :create ]
+
   get "git_status" => "git_status#show", as: :git_status
 
   get "up" => "rails/health#show", as: :rails_health_check
 
-  root to: redirect("/content/posts")
+  root to: "dashboard#index"
 end

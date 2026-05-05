@@ -20,6 +20,7 @@
             <% end %>
           </span>
           <nav class="site-header__nav">
+            <%= link_to "Dashboard", root_path %>
             <%= link_to "Posts", content_posts_path %>
             <%= link_to "Events", content_events_path %>
             <% if Current.site && Current.user.admin_of?(Current.site) %>

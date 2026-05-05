@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_30_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_05_000001) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -40,11 +40,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_30_000001) do
   end
 
   create_table "audit_events", force: :cascade do |t|
+    t.datetime "acknowledged_at"
     t.string "action", null: false
     t.bigint "auditable_id"
     t.string "auditable_type"
     t.datetime "created_at", null: false
+    t.text "error_message"
     t.integer "site_id", null: false
+    t.string "title"
     t.integer "user_id", null: false
     t.index ["auditable_type", "auditable_id"], name: "index_audit_events_on_auditable_type_and_auditable_id"
     t.index ["site_id", "created_at"], name: "index_audit_events_on_site_id_and_created_at"

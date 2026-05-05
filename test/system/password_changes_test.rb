@@ -20,7 +20,7 @@ class PasswordChangesTest < ApplicationSystemTestCase
     fill_in "Confirm new password", with: "mynewpassword123"
     click_button "Set password"
 
-    assert_current_path content_posts_path
+    assert_current_path root_path
     assert_text "Password updated"
   end
 

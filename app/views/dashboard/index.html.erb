@@ -1,0 +1,50 @@
+<% content_for :title, "Dashboard" %>
+
+<div class="dashboard">
+  <% if @failures.any? %>
+    <section class="publish-failures" aria-label="Publish failures">
+      <div class="publish-failures__header">
+        <h2 class="publish-failures__title">Publish failures</h2>
+        <% if Current.site && Current.user.admin_of?(Current.site) %>
+          <%= button_to "Dismiss all", publish_failure_acknowledgments_path,
+                class: "button button--ghost button--small" %>
+        <% end %>
+      </div>
+      <ul class="publish-failures__list">
+        <% @failures.each do |failure| %>
+          <li class="publish-failures__item">
+            <span class="publish-failures__content-title"><%= failure.title %></span>
+            <% if failure.error_message.present? %>
+              <code class="publish-failures__error"><%= failure.error_message %></code>
+            <% end %>
+            <time class="publish-failures__time" datetime="<%= failure.created_at.iso8601 %>">
+              <%= time_ago_in_words(failure.created_at) %> ago
+            </time>
+          </li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <section class="activity-feed">
+    <h2 class="activity-feed__heading">Recent activity</h2>
+    <% if @recent_events.any? %>
+      <ul class="activity-feed__list">
+        <% @recent_events.each do |event| %>
+          <li class="activity-feed__item<%= " activity-feed__item--failure" if event.failed? %>">
+            <span class="activity-feed__actor"><%= event.user.display_label %></span>
+            <span class="activity-feed__action"><%= event.human_action %></span>
+            <% if event.title.present? %>
+              <em class="activity-feed__subject"><%= event.title %></em>
+            <% end %>
+            <time class="activity-feed__time" datetime="<%= event.created_at.iso8601 %>">
+              <%= time_ago_in_words(event.created_at) %> ago
+            </time>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="activity-feed__empty">No activity yet.</p>
+    <% end %>
+  </section>
+</div>

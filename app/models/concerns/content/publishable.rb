@@ -18,8 +18,13 @@ module Content
 
     def publish!(actor: Current.user)
       site = self.site
-      site.commit_and_push(jekyll_files, commit_message, author: site.publish_author,
-                           files_to_delete: jekyll_files_to_delete)
+      begin
+        site.commit_and_push(jekyll_files, commit_message, author: site.publish_author,
+                             files_to_delete: jekyll_files_to_delete)
+      rescue PublishError => e
+        Audit::Event.record("publish_failed", auditable: self, site: site, user: actor, error: e)
+        raise
+      end
       update_column(:published_at, Time.current) unless published?
       save_published_snapshot!
       Audit::Event.record("publish", auditable: self, site: site, user: actor)
@@ -28,8 +33,13 @@ module Content
     def unpublish!(actor: Current.user)
       site = self.site
       paths = jekyll_files_to_unpublish
-      site.commit_and_push({}, "Unpublish: #{title}", author: site.publish_author,
-                           files_to_delete: paths)
+      begin
+        site.commit_and_push({}, "Unpublish: #{title}", author: site.publish_author,
+                             files_to_delete: paths)
+      rescue PublishError => e
+        Audit::Event.record("publish_failed", auditable: self, site: site, user: actor, error: e)
+        raise
+      end
       update_columns(published_at: nil)
       clear_published_snapshot!
       Audit::Event.record("unpublish", auditable: self, site: site, user: actor)

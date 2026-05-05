@@ -1,10 +1,10 @@
 require "application_system_test_case"
 
 class SessionsTest < ApplicationSystemTestCase
-  test "signs in with valid credentials and lands on posts" do
+  test "signs in with valid credentials and lands on dashboard" do
     sign_in
-    assert_current_path content_posts_path
-    assert_text "Posts"
+    assert_current_path root_path
+    assert_text "Recent activity"
   end
 
   test "stays on sign-in page with wrong password" do
