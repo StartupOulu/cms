@@ -20,6 +20,8 @@ export default class extends Controller {
     this.canvasTarget.addEventListener("dragover",  e => { e.preventDefault(); e.dataTransfer.dropEffect = "copy" })
     this.canvasTarget.addEventListener("drop",      e => this.onDrop(e))
     this.canvasTarget.addEventListener("paste",     e => this.onPaste(e))
+    this.canvasTarget.addEventListener("focusin",   e => this.setActiveBlock(e.target.closest(".block")))
+    this.canvasTarget.addEventListener("focusout",  () => this.setActiveBlock(null))
   }
 
   disconnect() {
@@ -30,10 +32,8 @@ export default class extends Controller {
 
   render(blocks) {
     this.canvasTarget.innerHTML = ""
-    this.insertPlusButton(0)
-    blocks.forEach((block, i) => {
+    blocks.forEach(block => {
       this.canvasTarget.appendChild(this.createBlock(block))
-      this.insertPlusButton(i + 1)
     })
     this.updateInput()
   }
@@ -42,6 +42,14 @@ export default class extends Controller {
     const wrapper = document.createElement("div")
     wrapper.className = "block"
     wrapper.dataset.blockType = data.type
+
+    const addBtn = document.createElement("button")
+    addBtn.type      = "button"
+    addBtn.className = "block__add-btn"
+    addBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="14" viewBox="0 0 10 14" fill="currentColor" aria-hidden="true"><circle cx="2.5" cy="2"  r="1.5"/><circle cx="7.5" cy="2"  r="1.5"/><circle cx="2.5" cy="7"  r="1.5"/><circle cx="7.5" cy="7"  r="1.5"/><circle cx="2.5" cy="12" r="1.5"/><circle cx="7.5" cy="12" r="1.5"/></svg>'
+    addBtn.setAttribute("aria-label", "Add block")
+    addBtn.addEventListener("click", () => this.openMenu(wrapper))
+    wrapper.appendChild(addBtn)
 
     if (data.type === "ul" || data.type === "ol") {
       const list = document.createElement(data.type)
@@ -123,24 +131,12 @@ export default class extends Controller {
     return li
   }
 
-  insertPlusButton(index) {
-    const wrap = document.createElement("div")
-    wrap.className    = "block-insert"
-    wrap.dataset.index = index
-    const btn = document.createElement("button")
-    btn.type        = "button"
-    btn.className   = "block-insert__btn"
-    btn.textContent = "+"
-    btn.setAttribute("aria-label", "Add block")
-    btn.addEventListener("click", e => this.openMenu(e.currentTarget.closest(".block-insert")))
-    wrap.appendChild(btn)
-    this.canvasTarget.appendChild(wrap)
-  }
-
   // ── Type switcher menu ────────────────────────────────────────────────────
 
-  openMenu(insertEl) {
+  openMenu(wrapper) {
     this.closeMenu()
+    const insertIndex = this.blockIndex(wrapper) + 1
+    const addBtn = wrapper.querySelector(".block__add-btn")
     const menu = document.createElement("div")
     menu.className = "block-menu"
     menu.setAttribute("role", "menu")
@@ -151,7 +147,6 @@ export default class extends Controller {
       { label: "Heading 3",     data: { type: "heading", level: 3, content: "" } },
       { label: "Bullet list",   data: { type: "ul", items: [""] } },
       { label: "Numbered list", data: { type: "ol", items: [""] } },
-      { label: "Image",         data: null },
     ]
 
     types.forEach(({ label, data }) => {
@@ -160,19 +155,18 @@ export default class extends Controller {
       btn.textContent = label
       btn.setAttribute("role", "menuitem")
       btn.addEventListener("click", () => {
-        const index = parseInt(insertEl.dataset.index, 10)
         this.closeMenu()
         if (data) {
-          this.insertBlockAt(index, data)
+          this.insertBlockAt(insertIndex, data)
         } else {
-          this.pickImageAt(index)
+          this.pickImageAt(insertIndex)
         }
       })
       menu.appendChild(btn)
     })
 
-    insertEl.appendChild(menu)
-    insertEl.classList.add("block-insert--open")
+    addBtn.appendChild(menu)
+    wrapper.classList.add("block--menu-open")
 
     this._menuCloseHandler = e => {
       if (!menu.contains(e.target)) this.closeMenu()
@@ -183,7 +177,7 @@ export default class extends Controller {
   closeMenu() {
     const existing = this.canvasTarget.querySelector(".block-menu")
     if (existing) {
-      existing.closest(".block-insert")?.classList.remove("block-insert--open")
+      existing.closest(".block")?.classList.remove("block--menu-open")
       existing.remove()
     }
     if (this._menuCloseHandler) {
@@ -197,10 +191,12 @@ export default class extends Controller {
   onTextKeydown(e) {
     const el      = e.currentTarget
     const wrapper = el.closest(".block")
+    const index   = this.blockIndex(wrapper)
+    const blocks  = this.canvasTarget.querySelectorAll(".block")
 
     if (e.key === "Enter") {
       e.preventDefault()
-      this.insertBlockAt(this.blockIndex(wrapper) + 1, { type: "paragraph", content: "" })
+      this.insertBlockAt(index + 1, { type: "paragraph", content: "" })
       return
     }
 
@@ -210,10 +206,25 @@ export default class extends Controller {
       return
     }
 
+    if (e.key === "ArrowDown" && this.caretAtLastLine(el)) {
+      if (index + 1 < blocks.length) {
+        e.preventDefault()
+        this.focusBlockAt(index + 1, "start")
+      }
+      return
+    }
+
+    if (e.key === "ArrowUp" && this.caretAtFirstLine(el)) {
+      if (index > 0) {
+        e.preventDefault()
+        this.focusBlockAt(index - 1, "end")
+      }
+      return
+    }
+
     if (e.key === "/" && el.textContent === "") {
       e.preventDefault()
-      const insertEl = wrapper.previousElementSibling
-      if (insertEl?.classList.contains("block-insert")) this.openMenu(insertEl)
+      this.openMenu(wrapper)
     }
   }
 
@@ -253,6 +264,23 @@ export default class extends Controller {
         this.onChange()
       }
     }
+
+    if (e.key === "ArrowDown" && li === list.lastElementChild && this.caretAtLastLine(li)) {
+      const index = this.blockIndex(wrapper)
+      const blocks = this.canvasTarget.querySelectorAll(".block")
+      if (index + 1 < blocks.length) {
+        e.preventDefault()
+        this.focusBlockAt(index + 1, "start")
+      }
+    }
+
+    if (e.key === "ArrowUp" && li === list.firstElementChild && this.caretAtFirstLine(li)) {
+      const index = this.blockIndex(wrapper)
+      if (index > 0) {
+        e.preventDefault()
+        this.focusBlockAt(index - 1, "end")
+      }
+    }
   }
 
   // ── Block manipulation ────────────────────────────────────────────────────
@@ -282,18 +310,23 @@ export default class extends Controller {
     this.onChange()
   }
 
+  setActiveBlock(block) {
+    this.canvasTarget.querySelectorAll(".block--active").forEach(b => b.classList.remove("block--active"))
+    block?.classList.add("block--active")
+  }
+
   blockIndex(wrapper) {
     return Array.from(this.canvasTarget.querySelectorAll(".block")).indexOf(wrapper)
   }
 
-  focusBlockAt(index) {
+  focusBlockAt(index, position = "end") {
     const blocks   = this.canvasTarget.querySelectorAll(".block")
     const target   = blocks[index]
     if (!target) return
     const focusable = target.querySelector("[contenteditable]")
     if (focusable) {
       focusable.focus()
-      this.placeCaret(focusable, "end")
+      this.placeCaret(focusable, position)
     }
   }
 
@@ -451,6 +484,32 @@ export default class extends Controller {
     const range = sel.getRangeAt(0)
     return range.startOffset === 0 &&
       (range.startContainer === el || el.contains(range.startContainer))
+  }
+
+  caretAtFirstLine(el) {
+    if (!el.textContent) return true
+    const sel = window.getSelection()
+    if (!sel?.rangeCount) return false
+    const range     = sel.getRangeAt(0).cloneRange()
+    range.collapse(true)
+    const caretRect = range.getBoundingClientRect()
+    if (!caretRect.height) return false
+    const elRect = el.getBoundingClientRect()
+    const lineH  = parseFloat(getComputedStyle(el).lineHeight) || caretRect.height * 1.5
+    return caretRect.top < elRect.top + lineH
+  }
+
+  caretAtLastLine(el) {
+    if (!el.textContent) return true
+    const sel = window.getSelection()
+    if (!sel?.rangeCount) return false
+    const range     = sel.getRangeAt(0).cloneRange()
+    range.collapse(true)
+    const caretRect = range.getBoundingClientRect()
+    if (!caretRect.height) return false
+    const elRect = el.getBoundingClientRect()
+    const lineH  = parseFloat(getComputedStyle(el).lineHeight) || caretRect.height * 1.5
+    return caretRect.bottom > elRect.bottom - lineH
   }
 
   placeCaret(el, position = "end") {

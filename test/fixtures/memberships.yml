@@ -7,3 +7,8 @@ editor_on_startupoulu:
   user: editor
   site: startupoulu
   role: editor
+
+newhire_on_startupoulu:
+  user: new_hire
+  site: startupoulu
+  role: editor

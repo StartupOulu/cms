@@ -13,6 +13,8 @@
               <%= event.published? ? "Published" : "Draft" %>
             </span>
             <time><%= event.start_time.strftime("%d %b %Y") %></time>
+            <span class="post-list__dot">·</span>
+            <span><%= event.user.display_label %></span>
             <% if event.location.present? %>
               <span class="post-list__dot">·</span>
               <span><%= event.location %></span>

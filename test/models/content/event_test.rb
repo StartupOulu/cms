@@ -82,8 +82,8 @@ module Content
     test "to_markdown includes correct front matter fields" do
       md = event.to_markdown
       assert_includes md, "title: Tech Meetup July 2026"
-      assert_includes md, "start_time: '2026-07-15 17:00:00'"
-      assert_includes md, "end_time: '2026-07-15 20:00:00'"
+      assert_includes md, "start_time: '2026-07-15 20:00:00'"
+      assert_includes md, "end_time: '2026-07-15 23:00:00'"
       assert_includes md, "layout: event"
     end
 

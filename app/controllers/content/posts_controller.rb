@@ -5,7 +5,7 @@ module Content
     before_action :ensure_admin, only: %i[destroy]
 
     def index
-      @posts = Current.site.content_posts.order(created_at: :desc)
+      @posts = Current.site.content_posts.includes(:user).order(created_at: :desc)
     end
 
     def show

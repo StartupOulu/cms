@@ -5,7 +5,7 @@ module Content
     before_action :ensure_admin, only: %i[destroy]
 
     def index
-      @events = Current.site.content_events.order(start_time: :desc)
+      @events = Current.site.content_events.includes(:user).order(start_time: :desc)
     end
 
     def show

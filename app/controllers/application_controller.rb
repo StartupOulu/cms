@@ -5,11 +5,17 @@ class ApplicationController < ActionController::Base
   stale_when_importmap_changes
 
   before_action :set_current_site
+  before_action :require_password_change
 
   private
 
   def set_current_site
     return unless Current.user
     Current.site = Current.user.sites.first
+  end
+
+  def require_password_change
+    return unless Current.user&.must_change_password?
+    redirect_to edit_password_change_path
   end
 end

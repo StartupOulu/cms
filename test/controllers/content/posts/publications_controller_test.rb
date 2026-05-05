@@ -19,7 +19,7 @@ module Content
 
           delete content_post_publication_path(@post)
 
-          assert_redirected_to content_posts_path
+          assert_redirected_to content_post_path(@post)
           assert_equal "Post unpublished.", flash[:notice]
           assert @post.reload.draft?
         end

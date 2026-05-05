@@ -14,6 +14,8 @@
       <% else %>
         <span class="post-list__status post-list__status--draft">Draft</span>
       <% end %>
+      <span class="post-list__dot">·</span>
+      <span class="sidebar-section__date"><%= @post.user.display_label %></span>
       <% if @post.pending_changes? %>
         <span class="post-list__dot">·</span>
         <span class="sidebar-section__date">Unpublished changes</span>
@@ -22,9 +24,16 @@
     <div class="post-detail__toolbar-actions">
       <%= link_to "Edit", edit_content_post_path(@post), class: "button button--secondary" %>
       <%= link_to "Preview ↗", content_post_preview_path(@post), class: "button button--secondary", target: "_blank" %>
+      <% if @post.published? && @post.pending_changes? %>
+        <%= button_to "Publish changes", content_post_publication_path(@post), method: :post,
+                      class: "button button--primary" %>
+      <% elsif !@post.published? %>
+        <%= button_to "Publish", content_post_publication_path(@post), method: :post,
+                      class: "button button--primary" %>
+      <% end %>
       <% if @post.published? %>
         <%= button_to "Unpublish", content_post_publication_path(@post), method: :delete,
-                      class: "button button--secondary",
+                      class: "button button--ghost",
                       form: { data: { turbo_confirm: "Remove this post from the live site?" } } %>
       <% end %>
       <% if Current.user.admin_of?(Current.site) %>

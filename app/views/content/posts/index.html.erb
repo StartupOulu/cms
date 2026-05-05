@@ -15,6 +15,8 @@
             <% if post.published_at %>
               <time><%= post.published_at.strftime("%d %b %Y") %></time>
             <% end %>
+            <span class="post-list__dot">·</span>
+            <span><%= post.user.display_label %></span>
             <% if post.pending_changes? %>
               <span class="post-list__dot">·</span>
               <span>Unpublished changes</span>

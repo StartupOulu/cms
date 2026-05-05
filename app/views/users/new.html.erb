@@ -1,0 +1,37 @@
+<div class="post-back">
+  <%= link_to "← Users", users_path %>
+</div>
+
+<h1>Add user</h1>
+
+<% if @user.errors.any? %>
+  <div class="form-errors" role="alert">
+    <ul>
+      <% @user.errors.full_messages.each do |msg| %>
+        <li><%= msg %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<%= form_with model: @user, url: users_path do |f| %>
+  <div class="field">
+    <%= f.label :email_address, "Email" %>
+    <%= f.email_field :email_address, required: true, autofocus: true, autocomplete: "off" %>
+  </div>
+
+  <div class="field">
+    <%= f.label :display_name, "Display name (optional)" %>
+    <%= f.text_field :display_name, autocomplete: "off" %>
+  </div>
+
+  <div class="field">
+    <%= f.label :role, "Role" %>
+    <%= f.select :role, [["Editor", "editor"], ["Admin", "admin"]], {}, class: "field__select" %>
+  </div>
+
+  <div class="form-actions">
+    <%= f.submit "Create user", class: "button button--primary" %>
+    <%= link_to "Cancel", users_path, class: "button button--ghost" %>
+  </div>
+<% end %>

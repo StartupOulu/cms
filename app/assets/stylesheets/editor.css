@@ -24,11 +24,12 @@
 
   /* ── Canvas ───────────────────────────────────── */
   .editor-canvas {
-    border:        1px solid var(--color-border);
-    border-radius: var(--radius);
-    padding:       var(--space-6);
-    min-block-size: 16rem;
-    background:    var(--color-surface);
+    border:          1px solid var(--color-border);
+    border-radius:   var(--radius);
+    padding-block:   var(--space-6);
+    padding-inline:  var(--space-10);
+    min-block-size:  16rem;
+    background:      var(--color-surface);
   }
 
   /* ── Individual block ─────────────────────────── */
@@ -85,8 +86,10 @@
 
   .cover-image-slot__placeholder {
     display:         flex;
+    flex-direction:  column;
     align-items:     center;
     justify-content: center;
+    gap:             var(--space-1);
     block-size:      10rem;
     color:           var(--color-text-muted);
     font-size:       var(--text-sm);
@@ -96,6 +99,12 @@
 
   .cover-image-slot__placeholder:hover {
     background: var(--color-border);
+  }
+
+  .cover-image-slot__hint {
+    font-size:  var(--text-sm);
+    color:      var(--color-text-muted);
+    margin-block-start: var(--space-1);
   }
 
   .cover-image-slot__preview {
@@ -166,42 +175,52 @@
     font-size:       var(--text-sm);
   }
 
-  /* ── Between-block insert button ─────────────── */
-  .block-insert {
-    position:        relative;
-    display:         flex;
-    justify-content: flex-start;
-    padding-block:   var(--space-1);
-    opacity:         0;
-    transition:      opacity 0.1s;
+  /* ── Block hover highlight ───────────────────── */
+  .block {
+    position:            relative;
+    border-radius:       var(--radius);
+    padding-inline:      var(--space-2);
+    margin-inline:       calc(-1 * var(--space-2));
+    transition:          background 0.1s;
   }
 
-  .editor-canvas:hover .block-insert,
-  .block-insert--open {
-    opacity: 1;
+  .block:hover {
+    background: var(--color-bg);
   }
 
-  .block-insert__btn {
+  .block--active {
+    background: var(--color-bg);
+    box-shadow: inset 2px 0 0 var(--color-accent);
+  }
+
+  /* ── Left-side add button ────────────────────── */
+  .block__add-btn {
+    position:           absolute;
+    inset-inline-start: calc(-1 * var(--space-6));
+    inset-block-start:  0.2em;
+
     appearance: none;
     background: none;
-    border:     1px solid var(--color-border);
-    border-radius: 50%;
-    width:      1.25rem;
-    height:     1.25rem;
-    font-size:  0.85rem;
-    line-height: 1;
-    color:      var(--color-text-muted);
-    cursor:     pointer;
+    border:     none;
     padding:    0;
+    cursor:     grab;
+    color:      var(--color-text-muted);
     display:    flex;
     align-items: center;
     justify-content: center;
+    width:      1.25rem;
+    height:     1.25rem;
+    opacity:    0;
+    transition: opacity 0.1s;
   }
 
-  .block-insert__btn:hover {
-    background:   var(--color-border);
-    border-color: var(--color-text-muted);
-    color:        var(--color-text);
+  .block:hover .block__add-btn,
+  .block--menu-open .block__add-btn {
+    opacity: 1;
+  }
+
+  .block__add-btn:hover {
+    color: var(--color-text);
   }
 
   /* ── Block type menu ──────────────────────────── */

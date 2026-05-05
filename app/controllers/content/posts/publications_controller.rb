@@ -3,9 +3,16 @@ module Content
     class PublicationsController < ApplicationController
       before_action :set_post
 
+      def create
+        @post.publish!
+        redirect_to content_post_path(@post), notice: "Post published."
+      rescue PublishError => e
+        redirect_to content_post_path(@post), alert: "Publish failed: #{e.message}"
+      end
+
       def destroy
         @post.unpublish!
-        redirect_to content_posts_path, notice: "Post unpublished."
+        redirect_to content_post_path(@post), notice: "Post unpublished."
       rescue PublishError => e
         redirect_to content_post_path(@post), alert: "Unpublish failed: #{e.message}"
       end

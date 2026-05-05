@@ -22,9 +22,12 @@
           <nav class="site-header__nav">
             <%= link_to "Posts", content_posts_path %>
             <%= link_to "Events", content_events_path %>
+            <% if Current.site && Current.user.admin_of?(Current.site) %>
+              <%= link_to "Users", users_path %>
+            <% end %>
           </nav>
           <div class="site-header__user">
-            <% label = Current.user.display_name.presence || Current.user.email_address %>
+            <% label = Current.user.display_label %>
             <% if Current.site && Current.user.admin_of?(Current.site) %>
               <%= link_to label, git_status_path %>
             <% else %>

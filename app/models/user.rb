@@ -8,6 +8,10 @@ class User < ApplicationRecord
 
   validates :email_address, presence: true, uniqueness: true
 
+  def display_label
+    display_name.presence || email_address
+  end
+
   def member_of?(site)
     memberships.exists?(site: site)
   end

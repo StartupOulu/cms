@@ -1,0 +1,23 @@
+<div class="page-header">
+  <h1>Users</h1>
+  <%= link_to "Add user", new_user_path, class: "button button--primary" %>
+</div>
+
+<ul class="post-list">
+  <% @memberships.each do |membership| %>
+    <li class="post-list__item">
+      <div class="post-list__body">
+        <div class="post-list__title"><%= membership.user.display_label %></div>
+        <div class="post-list__meta">
+          <span><%= membership.user.email_address %></span>
+          <span class="post-list__dot">·</span>
+          <span class="post-list__status <%= membership.role == "admin" ? "post-list__status--published" : "post-list__status--draft" %>">
+            <%= membership.role.capitalize %>
+          </span>
+          <span class="post-list__dot">·</span>
+          <span>Added <%= membership.created_at.strftime("%d %b %Y") %></span>
+        </div>
+      </div>
+    </li>
+  <% end %>
+</ul>

@@ -342,22 +342,90 @@
     word-break:  break-all;
   }
 
-  /* ── Event meta ──────────────────────────────── */
-  .event-meta {
-    display:              grid;
-    grid-template-columns: max-content 1fr;
-    gap:                  var(--space-1) var(--space-5);
-    font-size:            var(--text-sm);
-    margin-block-end:     var(--space-5);
+  /* ── Event facts bar ─────────────────────────── */
+  .event-facts {
+    display:          flex;
+    align-items:      center;
+    flex-wrap:        wrap;
+    gap:              var(--space-2);
+    font-size:        var(--text-sm);
+    color:            var(--color-text-muted);
+    margin-block-end: var(--space-5);
   }
 
-  .event-meta dt {
-    color:       var(--color-text-muted);
+  .event-facts__sep {
+    line-height: 1;
+  }
+
+  .event-facts__item--date {
     font-weight: 500;
+    color:       var(--color-text);
   }
 
-  .event-meta dd {
+  .event-facts__item--cta {
+    color:           var(--color-accent);
+    text-decoration: none;
+  }
+
+  .event-facts__item--cta:hover {
+    text-decoration: underline;
+  }
+
+  /* ── Page header ─────────────────────────────── */
+  .page-header {
+    display:          flex;
+    align-items:      center;
+    justify-content:  space-between;
+    margin-block-end: var(--space-6);
+  }
+
+  .page-header h1 {
     margin: 0;
+  }
+
+  /* ── Temp password card ───────────────────────── */
+  .temp-password-card {
+    border:        1px solid var(--color-border);
+    border-radius: var(--radius);
+    background:    var(--color-surface);
+    padding:       var(--space-4) var(--space-5);
+    margin-block:  var(--space-5);
+    display:       flex;
+    flex-direction: column;
+    gap:           var(--space-3);
+  }
+
+  .temp-password-card__row {
+    display:     flex;
+    align-items: baseline;
+    gap:         var(--space-4);
+  }
+
+  .temp-password-card__label {
+    font-size:    var(--text-sm);
+    color:        var(--color-text-muted);
+    min-width:    10rem;
+    flex-shrink:  0;
+  }
+
+  .temp-password-card__value {
+    font-family:  var(--font-mono);
+    font-size:    var(--text-base);
+    color:        var(--color-text);
+    user-select:  all;
+  }
+
+  .temp-password-card__value--password {
+    font-size:    var(--text-xl);
+    font-weight:  600;
+    letter-spacing: 0.05em;
+    color:        var(--color-accent);
+  }
+
+  .temp-password-card__hint {
+    font-size:  var(--text-sm);
+    color:      var(--color-text-muted);
+    margin-block: 0;
   }
 
   /* ── Empty state ──────────────────────────────── */

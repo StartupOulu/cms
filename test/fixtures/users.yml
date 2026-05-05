@@ -9,3 +9,9 @@ editor:
   email_address: editor@example.com
   password_digest: <%= password_digest %>
   display_name: Editor User
+
+new_hire:
+  email_address: newhire@example.com
+  password_digest: <%= BCrypt::Password.create("temporarypass") %>
+  display_name: New Hire
+  must_change_password: true

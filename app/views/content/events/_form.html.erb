@@ -58,6 +58,7 @@
              style="<%= event.cover_image.attached? ? "display:none" : "" %>"
              data-action="click->cover-image#pick">
           <span>Click or drop image to upload</span>
+          <span class="cover-image-slot__hint">Recommended: 960 × 640 px</span>
         </div>
 
         <button type="button"
@@ -99,6 +100,6 @@
     <% end %>
     <%= f.submit "Publish", name: :publish, class: "button button--primary" %>
     <%= f.submit "Save", name: nil, class: "button button--secondary" unless event.new_record? %>
-    <%= link_to "Cancel", content_events_path, class: "button button--ghost" %>
+    <%= link_to "Cancel", event.persisted? ? content_event_path(event) : content_events_path, class: "button button--ghost" %>
   </div>
 <% end %>

@@ -44,6 +44,7 @@
              style="<%= post.cover_image.attached? ? "display:none" : "" %>"
              data-action="click->cover-image#pick">
           <span>Click or drop image to upload</span>
+          <span class="cover-image-slot__hint">Recommended: 1600 × 600 px</span>
         </div>
 
         <button type="button"
@@ -79,8 +80,10 @@
   <div class="form-actions">
     <% if post.new_record? %>
       <%= f.submit "Save draft", name: nil, class: "button button--secondary" %>
+    <% else %>
+      <%= f.submit "Save", name: nil, class: "button button--secondary" %>
     <% end %>
     <%= f.submit "Publish", name: :publish, class: "button button--primary" %>
-    <%= link_to "Cancel", content_posts_path, class: "button button--ghost" %>
+    <%= link_to "Cancel", post.persisted? ? content_post_path(post) : content_posts_path, class: "button button--ghost" %>
   </div>
 <% end %>

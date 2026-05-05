@@ -14,18 +14,19 @@
       <% else %>
         <span class="post-list__status post-list__status--draft">Draft</span>
       <% end %>
+      <span class="post-list__dot">·</span>
+      <span class="sidebar-section__date"><%= @event.user.display_label %></span>
     </div>
     <div class="post-detail__toolbar-actions">
       <%= link_to "Edit", edit_content_event_path(@event), class: "button button--secondary" %>
       <%= link_to "Preview ↗", content_event_preview_path(@event), class: "button button--secondary", target: "_blank" %>
       <% if @event.published? %>
         <%= button_to "Unpublish", content_event_publication_path(@event), method: :delete,
-                      class: "button button--secondary",
+                      class: "button button--ghost",
                       form: { data: { turbo_confirm: "Remove this event from the live site?" } } %>
       <% else %>
         <%= button_to "Publish", content_event_publication_path(@event), method: :post,
-                      class: "button button--primary",
-                      form: { data: { turbo_confirm: "Publish this event to the live site?" } } %>
+                      class: "button button--primary" %>
       <% end %>
       <% if Current.user.admin_of?(Current.site) %>
         <%= button_to "Delete", content_event_path(@event), method: :delete,
@@ -41,23 +42,24 @@
     </div>
   <% end %>
 
-  <dl class="event-meta">
-    <dt>Date</dt>
-    <dd>
+  <div class="event-facts">
+    <span class="event-facts__item event-facts__item--date">
       <%= @event.start_time.strftime("%d %b %Y, %H:%M") %>
       <% if @event.end_time.present? %>
         – <%= @event.end_time.strftime("%H:%M") %>
       <% end %>
-    </dd>
+    </span>
     <% if @event.location.present? %>
-      <dt>Location</dt>
-      <dd><%= @event.location %></dd>
+      <span class="event-facts__sep">·</span>
+      <span class="event-facts__item"><%= @event.location %></span>
     <% end %>
     <% if @event.cta_title.present? && @event.cta_link.present? %>
-      <dt>Link</dt>
-      <dd><%= link_to @event.cta_title, @event.cta_link, target: "_blank", rel: "noopener" %></dd>
+      <span class="event-facts__sep">·</span>
+      <%= link_to @event.cta_title + " ↗", @event.cta_link,
+                  class: "event-facts__item event-facts__item--cta",
+                  target: "_blank", rel: "noopener" %>
     <% end %>
-  </dl>
+  </div>
 
   <% if @event.excerpt.present? %>
     <p class="post-detail__description"><%= @event.excerpt %></p>

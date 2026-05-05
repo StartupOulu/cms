@@ -1,10 +1,13 @@
 Rails.application.routes.draw do
   resource  :session
   resources :passwords, param: :token
+  resource  :password_change, only: [ :edit, :update ]
+  get "users/credentials", to: "users#credentials", as: :user_credentials
+  resources :users, only: [ :index, :new, :create ]
 
   namespace :content do
     resources :posts do
-      resource :publication, only: [ :destroy ], controller: "posts/publications"
+      resource :publication, only: [ :create, :destroy ], controller: "posts/publications"
       resource :autosave,    only: [ :update ],  controller: "posts/autosaves"
       resource :cover_image, only: [ :update, :destroy ], controller: "posts/cover_images"
       resources :images,     only: [ :create ],  controller: "posts/images"

@@ -3,7 +3,7 @@
 <div class="sign-in">
   <h1>Sign in</h1>
 
-  <%= form_with url: session_path do |f| %>
+  <%= form_with url: session_path, data: {turbo: false} do |f| %>
     <div class="field">
       <%= f.label :email_address, "Email" %>
       <%= f.email_field :email_address, required: true, autofocus: true,
