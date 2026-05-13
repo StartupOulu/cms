@@ -3,7 +3,7 @@
 # Production server (same server as Masterlist)
 REMOTE_SERVER=masterlist.fi
 REMOTE_USER=deploy
-RUBY_VERSION="3.4.6"
+RUBY_VERSION="4.0.4"
 REMOTE_APP_DIR=/var/www/apps/cms
 
 # --- nothing below should need changing ---
