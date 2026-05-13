@@ -1,0 +1,41 @@
+<% content_for :title, "Application errors" %>
+
+<div class="error-log">
+  <div class="page-header">
+    <h1 class="error-log__heading">Application errors</h1>
+    <%= link_to "Integrations", admin_integrations_path, class: "button button--ghost button--small" %>
+  </div>
+
+  <% if @error_logs.any? %>
+    <ul class="error-log__list">
+      <% @error_logs.each do |entry| %>
+        <li class="error-log__item">
+          <div class="error-log__meta">
+            <span class="error-log__class"><%= entry["error_class"] %></span>
+            <span class="error-log__handled"><%= entry["handled"] == 1 ? "handled" : "unhandled" %></span>
+            <time class="error-log__time" datetime="<%= entry["created_at"] %>">
+              <%= time_ago_in_words(Time.parse(entry["created_at"])) %> ago
+            </time>
+          </div>
+          <p class="error-log__message"><%= entry["message"] %></p>
+          <% context = JSON.parse(entry["context"] || "{}") rescue {} %>
+          <% if context.any? %>
+            <p class="error-log__context">
+              <% context.compact.each do |key, value| %>
+                <span><%= key %>: <%= value %></span>
+              <% end %>
+            </p>
+          <% end %>
+          <% if entry["backtrace"].present? %>
+            <details class="error-log__backtrace">
+              <summary>Backtrace</summary>
+              <pre><%= entry["backtrace"] %></pre>
+            </details>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p class="error-log__empty">No errors recorded.</p>
+  <% end %>
+</div>

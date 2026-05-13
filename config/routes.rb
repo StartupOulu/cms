@@ -23,7 +23,10 @@ Rails.application.routes.draw do
 
   resource :publish_failure_acknowledgments, only: [ :create ]
 
-  get "git_status" => "git_status#show", as: :git_status
+  namespace :admin do
+    root to: "error_logs#index"
+    resource :integrations, only: [ :show ]
+  end
 
   get "up" => "rails/health#show", as: :rails_health_check
 

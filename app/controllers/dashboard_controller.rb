@@ -7,5 +7,6 @@ class DashboardController < ApplicationController
     @failures = Audit::Event.where(site: Current.site)
                             .unacknowledged_failures
                             .includes(:user)
+
   end
 end

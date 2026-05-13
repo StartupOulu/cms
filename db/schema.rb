@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_05_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_12_000001) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -91,6 +91,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_05_000001) do
     t.index ["site_id", "slug"], name: "index_content_posts_on_site_id_and_slug", unique: true
     t.index ["site_id"], name: "index_content_posts_on_site_id"
     t.index ["user_id"], name: "index_content_posts_on_user_id"
+  end
+
+  create_table "error_logs", force: :cascade do |t|
+    t.text "backtrace"
+    t.text "context"
+    t.datetime "created_at", null: false
+    t.string "error_class", null: false
+    t.boolean "handled", default: false, null: false
+    t.text "message", null: false
+    t.string "severity", null: false
+    t.index ["created_at"], name: "index_error_logs_on_created_at"
+    t.index ["handled"], name: "index_error_logs_on_handled"
   end
 
   create_table "memberships", force: :cascade do |t|

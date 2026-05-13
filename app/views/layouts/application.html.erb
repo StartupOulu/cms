@@ -30,7 +30,7 @@
           <div class="site-header__user">
             <% label = Current.user.display_label %>
             <% if Current.site && Current.user.admin_of?(Current.site) %>
-              <%= link_to label, git_status_path %>
+              <%= link_to label, admin_root_path %>
             <% else %>
               <span><%= label %></span>
             <% end %>

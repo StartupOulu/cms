@@ -1,0 +1,70 @@
+#!/usr/bin/env sh
+
+# Production server (same server as Masterlist)
+REMOTE_SERVER=masterlist.fi
+REMOTE_USER=deploy
+RUBY_VERSION="3.4.6"
+REMOTE_APP_DIR=/var/www/apps/cms
+
+# --- nothing below should need changing ---
+
+TIMESTAMP=$(date +"%Y-%m-%d-%H-%M-%S")
+CURRENT_DIR=$REMOTE_APP_DIR/current
+DESTINATION_DIR=$REMOTE_APP_DIR/releases/$TIMESTAMP
+SHARED_DIR=$REMOTE_APP_DIR/shared
+
+run_ssh() {
+  ssh $REMOTE_USER@$REMOTE_SERVER "bash -l -c 'source ~/.bashrc && eval \"\$(~/.rbenv/bin/rbenv init -)\" && ${1}'"
+}
+
+echo "==> Copying files to $DESTINATION_DIR"
+rsync -av \
+  --exclude-from='.gitignore' \
+  --exclude '.git' \
+  --exclude 'log/*' \
+  --exclude 'tmp/*' \
+  --exclude 'storage/*' \
+  --exclude 'shared/*' \
+  --exclude 'public/assets' \
+  --exclude 'config/credentials/*.key' \
+  --exclude 'config/master.key' \
+  --exclude '.env*' \
+  --exclude 'test' \
+  --exclude '.DS_Store' \
+  --exclude '*.sqlite3' \
+  --progress \
+  --delete \
+  ./ $REMOTE_USER@$REMOTE_SERVER:$DESTINATION_DIR
+
+echo "==> Linking credentials"
+run_ssh "cp ${SHARED_DIR}/master.key ${DESTINATION_DIR}/config/master.key"
+
+echo "==> Enforcing Ruby ${RUBY_VERSION}"
+run_ssh "echo ${RUBY_VERSION} > ${DESTINATION_DIR}/.ruby-version"
+
+echo "==> Installing gems"
+run_ssh "cd ${DESTINATION_DIR} && bundle install"
+
+echo "==> Precompiling assets"
+run_ssh "cd ${DESTINATION_DIR} && RAILS_ENV=production bundle exec rails assets:precompile"
+
+echo "==> Symlinking current -> ${DESTINATION_DIR}"
+run_ssh "ln -nsf ${DESTINATION_DIR} ${CURRENT_DIR}"
+
+echo "==> Symlinking storage (SQLite databases + Active Storage)"
+run_ssh "rm -rf ${DESTINATION_DIR}/storage && ln -nsf ${SHARED_DIR}/storage ${DESTINATION_DIR}/storage"
+
+echo "==> Symlinking shared/repos (git clones of website repos)"
+run_ssh "mkdir -p ${DESTINATION_DIR}/shared && ln -nsf ${SHARED_DIR}/repos ${DESTINATION_DIR}/shared/repos"
+
+echo "==> Symlinking shared/ssh (per-site deploy keys)"
+run_ssh "mkdir -p ${DESTINATION_DIR}/shared && ln -nsf ${SHARED_DIR}/ssh ${DESTINATION_DIR}/shared/ssh"
+
+echo "==> Running database migrations"
+run_ssh "cd ${DESTINATION_DIR} && RAILS_ENV=production bundle exec rails db:prepare"
+
+echo "==> Restarting Puma (and Solid Queue)"
+run_ssh "sudo systemctl restart cms"
+
+echo ""
+echo "Deployed to ${DESTINATION_DIR}"

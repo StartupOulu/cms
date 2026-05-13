@@ -6,8 +6,19 @@ class ApplicationController < ActionController::Base
 
   before_action :set_current_site
   before_action :require_password_change
+  around_action :set_error_context
 
   private
+
+  def set_error_context
+    Rails.error.set_context(
+      user_id: Current.user&.id,
+      site_id: Current.site&.id,
+      url: request.url,
+      method: request.method
+    )
+    yield
+  end
 
   def set_current_site
     return unless Current.user
