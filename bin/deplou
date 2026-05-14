@@ -1,7 +1,6 @@
 #!/usr/bin/env sh
 
-# Production server (same server as Masterlist)
-REMOTE_SERVER=masterlist.fi
+REMOTE_SERVER=yourserver.example.com
 REMOTE_USER=deploy
 RUBY_VERSION="4.0.4"
 REMOTE_APP_DIR=/var/www/apps/cms

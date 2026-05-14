@@ -59,49 +59,44 @@ Visit `http://localhost:3000` and sign in.
 
 See `docs/deployment.md` for the complete walkthrough. Short version:
 
-### 1. Create the first site
+### 1. Create the first site and admin user
 
 ```sh
-bin/rails cms:sites:create -- \
-  --slug=startupoulu \
-  --name="StartupOulu" \
-  --repo-url=git@github.com:startupoulu/startupoulu.github.io.git \
-  --branch=main \
-  --site-url=https://startupoulu.com \
-  --publish-author="CMS Bot <cms@startupoulu.com>"
+RAILS_ENV=production bin/rails console
 ```
 
-This generates an SSH deploy keypair and prints the public half. Add it to the website repo's deploy keys on GitHub (Settings → Deploy keys → Add deploy key, tick **Allow write access**).
+```ruby
+site = Site.create!(
+  name: "My Site", slug: "mysite",
+  repo_url: "git@github.com:org/repo.git", branch: "main",
+  site_url: "https://example.com",
+  clone_path: "/var/www/apps/cms/shared/repos/mysite",
+  deploy_key_path: "/var/www/apps/cms/shared/ssh/mysite/id_ed25519",
+  publish_author_name: "CMS Bot", publish_author_email: "cms@example.com"
+)
 
-Then clone the repo:
+user = User.create!(
+  email_address: "you@example.com", display_name: "Your Name",
+  password: "change-this-on-first-login", must_change_password: true
+)
+
+site.memberships.create!(user: user, role: "admin")
+```
+
+### 2. Clone the website repo
 
 ```sh
-bin/rails cms:sites:create -- --slug=startupoulu ... --clone
+GIT_SSH_COMMAND="ssh -i /var/www/apps/cms/shared/ssh/mysite/id_ed25519 -o StrictHostKeyChecking=no" \
+  git clone git@github.com:org/repo.git /var/www/apps/cms/shared/repos/mysite
 ```
 
-Or manually:
+The deploy key (`id_ed25519.pub`) must be added to the website repo on GitHub under **Settings → Deploy keys** with write access.
+
+### 3. Deploy
 
 ```sh
-GIT_SSH_COMMAND='ssh -i shared/ssh/startupoulu/id_ed25519' \
-  git clone git@github.com:startupoulu/startupoulu.github.io.git \
-  shared/repos/startupoulu
+bin/deplou
 ```
-
-### 2. Create the admin user
-
-```sh
-bin/rails console
-> user = User.create!(email_address: 'admin@example.com', password: 'strongpassword', display_name: 'Admin')
-> Membership.create!(user: user, site: Site.find_by(slug: 'startupoulu'), role: 'admin')
-```
-
-### 3. Rails credentials
-
-```sh
-bin/rails credentials:edit
-```
-
-No CMS-specific credentials are required for M1. Add GitHub tokens or other secrets here as needed.
 
 ---
 
