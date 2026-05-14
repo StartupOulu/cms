@@ -208,6 +208,19 @@ sudo systemctl enable --now cms
 
 Run from local dev to deploy: `bin/deplou`
 
+The script reads server details from a gitignored `.deploy` file in the
+project root. Copy the example and fill in your values before the first
+deploy:
+
+```bash
+cp .deploy.example .deploy
+# edit .deploy — set REMOTE_SERVER and REMOTE_USER
+```
+
+`.deploy` is never committed. If it is absent, the script falls back to
+the placeholder values in its header and will fail — the file is
+required for a real deploy.
+
 Steps performed:
 
 1. `rsync` the app to a new timestamped release directory on the server

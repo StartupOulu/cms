@@ -37,3 +37,6 @@
 
 # Runtime data — repos, SSH keys, file locks
 /shared/
+
+# Local deploy configuration (server address, user)
+/.deploy
