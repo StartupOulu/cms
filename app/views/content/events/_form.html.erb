@@ -1,7 +1,8 @@
 <% cover_upload = event.persisted? ? content_event_cover_image_path(event) : nil %>
 <% cover_delete = event.persisted? ? content_event_cover_image_path(event) : nil %>
 
-<%= form_with model: event, url: event.new_record? ? content_events_path : content_event_path(event) do |f| %>
+<%= form_with model: event, url: event.new_record? ? content_events_path : content_event_path(event),
+                data: { controller: "submit-guard", action: "submit->submit-guard#submit" } do |f| %>
   <% if event.errors.any? %>
     <div class="form-errors" role="alert">
       <ul>
@@ -98,7 +99,7 @@
     <% if event.new_record? %>
       <%= f.submit "Save draft", name: nil, class: "button button--secondary" %>
     <% end %>
-    <%= f.submit "Publish", name: :publish, class: "button button--primary" %>
+    <%= f.submit "Publish", name: :publish, class: "button button--primary", data: { submit_guard_target: "publish" } %>
     <%= f.submit "Save", name: nil, class: "button button--secondary" unless event.new_record? %>
     <%= link_to "Cancel", event.persisted? ? content_event_path(event) : content_events_path, class: "button button--ghost" %>
   </div>

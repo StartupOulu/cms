@@ -3,7 +3,8 @@
 <% cover_upload = post.persisted? ? content_post_cover_image_path(post) : nil %>
 <% cover_delete = post.persisted? ? content_post_cover_image_path(post) : nil %>
 
-<%= form_with model: post, url: post.new_record? ? content_posts_path : content_post_path(post) do |f| %>
+<%= form_with model: post, url: post.new_record? ? content_posts_path : content_post_path(post),
+                data: { controller: "submit-guard", action: "submit->submit-guard#submit" } do |f| %>
   <% if post.errors.any? %>
     <div class="form-errors" role="alert">
       <ul>
@@ -83,7 +84,7 @@
     <% else %>
       <%= f.submit "Save", name: nil, class: "button button--secondary" %>
     <% end %>
-    <%= f.submit "Publish", name: :publish, class: "button button--primary" %>
+    <%= f.submit "Publish", name: :publish, class: "button button--primary", data: { submit_guard_target: "publish" } %>
     <%= link_to "Cancel", post.persisted? ? content_post_path(post) : content_posts_path, class: "button button--ghost" %>
   </div>
 <% end %>
