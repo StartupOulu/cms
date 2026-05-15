@@ -114,7 +114,8 @@ class Site < ApplicationRecord
           git "add", path
         end
 
-        git "commit", "--author=#{author}", "-m", message
+        git "-c", "user.name=#{publish_author_name}", "-c", "user.email=#{publish_author_email}",
+            "commit", "--author=#{author}", "-m", message
         git "push", "origin", branch
       end
     end
