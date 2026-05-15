@@ -16,6 +16,14 @@
           </span>
           <span class="post-list__dot">·</span>
           <span>Added <%= membership.created_at.strftime("%d %b %Y") %></span>
+          <span class="post-list__dot">·</span>
+          <% if membership.user.last_signed_in_at %>
+            <span>Last sign-in <%= membership.user.last_signed_in_at.strftime("%d %b %Y") %></span>
+            <span class="post-list__dot">·</span>
+            <span><%= membership.user.sign_in_count %> <%= "sign-in".pluralize(membership.user.sign_in_count) %></span>
+          <% else %>
+            <span>Never signed in</span>
+          <% end %>
         </div>
       </div>
     </li>
