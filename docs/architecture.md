@@ -97,6 +97,10 @@ site-scoped content.
   the forced-change flow.
 - `current_site_id` — nullable FK to `Site`. The user's last-active
   site, defaulted on next sign-in.
+- `last_signed_in_at` — datetime, updated on every sign-in. Displayed
+  on the `/users` admin page so admins can see inactive accounts.
+- `sign_in_count` — integer, incremented on every sign-in. Also
+  shown on the users page.
 
 ### Post schema
 

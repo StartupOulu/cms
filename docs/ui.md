@@ -416,6 +416,7 @@ preview time.
 - Email + password only. No `Forgot password` link, no `Remember me`
   checkbox. The CMS has no email-sending capability yet, so password
   reset is an operator task (Rails console) rather than a UI flow.
+- Passwords must be at least 10 characters. Enforced at the model level.
 - Password auth for M1 (single admin user). Magic-link is a candidate
   for M4 when multiple editors arrive — but that depends on adding
   email sending first.
@@ -480,9 +481,7 @@ markdown body — everything lives in the front matter.
 - Polished mobile layouts (mobile must be usable, not refined)
 - Tags, categories, and multi-author attribution in the editor (no
   concrete need yet)
-- Inline formatting in paragraphs (bold, italic, links) — deferred
-  until users request it; see `The post editor` above
-- Block reordering — deferred; users cut and repaste
+- Block reordering via drag-and-drop (users cut and repaste for now)
 - Tables, callouts, columns, and any non-v1 block types
 - Rich text, block editor, or inline formatting in event description
   — plain paragraphs serialized to `<br>`-joined HTML (see `The
