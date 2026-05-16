@@ -254,4 +254,80 @@
   .block-menu button:hover {
     background: var(--color-bg);
   }
+
+  /* ── Link toolbar ─────────────────────────────── */
+  .link-toolbar {
+    position:      fixed;
+    z-index:       300;
+    display:       flex;
+    align-items:   center;
+    gap:           var(--space-1);
+    background:    var(--color-text);
+    border-radius: var(--radius);
+    padding:       var(--space-1) var(--space-2);
+    box-shadow:    0 4px 12px oklch(0% 0 0 / 0.15);
+  }
+
+  .link-toolbar[hidden] {
+    display: none;
+  }
+
+  .link-toolbar__btn,
+  .link-toolbar__apply,
+  .link-toolbar__remove {
+    appearance:  none;
+    background:  none;
+    border:      none;
+    color:       var(--color-surface);
+    font:        inherit;
+    font-size:   var(--text-sm);
+    cursor:      pointer;
+    padding:     var(--space-1) var(--space-2);
+    border-radius: calc(var(--radius) - 2px);
+    white-space: nowrap;
+  }
+
+  .link-toolbar__btn:hover,
+  .link-toolbar__apply:hover {
+    background: oklch(100% 0 0 / 0.12);
+  }
+
+  .link-toolbar__remove:hover {
+    background: oklch(100% 0 0 / 0.12);
+    color:      oklch(80% 0.12 20);
+  }
+
+  .link-toolbar__input-wrap {
+    display:     flex;
+    align-items: center;
+    gap:         var(--space-1);
+  }
+
+  .link-toolbar__url {
+    background:    oklch(100% 0 0 / 0.1);
+    border:        1px solid oklch(100% 0 0 / 0.2);
+    border-radius: calc(var(--radius) - 2px);
+    color:         var(--color-surface);
+    font:          inherit;
+    font-size:     var(--text-sm);
+    padding:       var(--space-1) var(--space-2);
+    inline-size:   16rem;
+    outline:       none;
+  }
+
+  .link-toolbar__url::placeholder {
+    color: oklch(100% 0 0 / 0.4);
+  }
+
+  .link-toolbar__url:focus {
+    border-color: oklch(100% 0 0 / 0.5);
+  }
+
+  /* Links inside contenteditable blocks */
+  .block__text a,
+  .block__list a {
+    color:           var(--color-accent);
+    text-decoration: underline;
+    cursor:          text;
+  }
 }

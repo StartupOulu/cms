@@ -1,11 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
 
 // Block JSON format:
-//   { type: "paragraph", content: "text" }
+//   { type: "paragraph", content: "text with [links](url)" }
 //   { type: "heading",   level: 2|3, content: "text" }
-//   { type: "ul",        items: ["a", "b"] }
+//   { type: "ul",        items: ["a", "b with [links](url)"] }
 //   { type: "ol",        items: ["a", "b"] }
 //   { type: "image",     signed_id: "...", url: "...", alt: "" }
+// Inline content is stored as markdown link syntax: [text](url)
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
 const MAX_SIZE      = 10 * 1024 * 1024
@@ -15,17 +16,39 @@ export default class extends Controller {
   static values  = { url: String, uploadUrl: String, blocks: Array }
 
   connect() {
-    this.saveTimer = null
+    this.saveTimer   = null
+    this.savedLink   = null
+    this.linkToolbar = null
+    this._onMouseUp      = () => this.updateLinkToolbar()
+    this._onKeyUp        = () => this.updateLinkToolbar()
+    this._onDocMouseDown = e => {
+      if (this.linkToolbar && !this.linkToolbar.hidden &&
+          !this.linkToolbar.contains(e.target) &&
+          !this.canvasTarget.contains(e.target)) {
+        this.hideLinkToolbar()
+      }
+    }
+
     this.render(this.blocksValue.length ? this.blocksValue : [{ type: "paragraph", content: "" }])
     this.canvasTarget.addEventListener("dragover",  e => { e.preventDefault(); e.dataTransfer.dropEffect = "copy" })
     this.canvasTarget.addEventListener("drop",      e => this.onDrop(e))
     this.canvasTarget.addEventListener("paste",     e => this.onPaste(e))
     this.canvasTarget.addEventListener("focusin",   e => this.setActiveBlock(e.target.closest(".block")))
-    this.canvasTarget.addEventListener("focusout",  () => this.setActiveBlock(null))
+    this.canvasTarget.addEventListener("focusout",  e => {
+      if (!e.relatedTarget?.closest(".link-toolbar")) this.setActiveBlock(null)
+    })
+    this.canvasTarget.addEventListener("mouseup",   this._onMouseUp)
+    this.canvasTarget.addEventListener("keyup",     this._onKeyUp)
+    this.canvasTarget.addEventListener("click",     e => { if (e.target.closest("a")) e.preventDefault() })
+    document.addEventListener("mousedown", this._onDocMouseDown)
   }
 
   disconnect() {
     clearTimeout(this.saveTimer)
+    this.canvasTarget.removeEventListener("mouseup", this._onMouseUp)
+    this.canvasTarget.removeEventListener("keyup",   this._onKeyUp)
+    document.removeEventListener("mousedown", this._onDocMouseDown)
+    this.linkToolbar?.remove()
   }
 
   // ── Rendering ────────────────────────────────────────────────────────────
@@ -67,7 +90,7 @@ export default class extends Controller {
       el.className          = "block__text"
       el.contentEditable    = "true"
       el.dataset.blockLevel = data.level || ""
-      el.textContent        = data.content || ""
+      this.markdownLinksToHtml(data.content || "", el)
       el.addEventListener("keydown", e => this.onTextKeydown(e))
       el.addEventListener("input",   () => this.onChange())
       wrapper.appendChild(el)
@@ -127,7 +150,7 @@ export default class extends Controller {
   createListItem(text = "") {
     const li = document.createElement("li")
     li.contentEditable = "true"
-    li.textContent     = text
+    this.markdownLinksToHtml(text, li)
     return li
   }
 
@@ -415,7 +438,7 @@ export default class extends Controller {
       const type = wrapper.dataset.blockType
 
       if (type === "ul" || type === "ol") {
-        return { type, items: Array.from(wrapper.querySelectorAll("li")).map(li => li.textContent) }
+        return { type, items: Array.from(wrapper.querySelectorAll("li")).map(li => this.htmlToMarkdownText(li)) }
       }
 
       if (type === "image") {
@@ -431,9 +454,9 @@ export default class extends Controller {
 
       const el = wrapper.querySelector("[contenteditable]")
       if (type === "heading") {
-        return { type, level: parseInt(el.dataset.blockLevel, 10), content: el.textContent }
+        return { type, level: parseInt(el.dataset.blockLevel, 10), content: this.htmlToMarkdownText(el) }
       }
-      return { type: "paragraph", content: el.textContent }
+      return { type: "paragraph", content: this.htmlToMarkdownText(el) }
     })
   }
 
@@ -474,6 +497,174 @@ export default class extends Controller {
     const labels = { saving: "Saving…", saved: "Saved", error: "Couldn't save" }
     this.statusTarget.textContent  = labels[state] ?? ""
     this.statusTarget.dataset.state = state
+  }
+
+  // ── Inline links ──────────────────────────────────────────────────────────
+
+  markdownLinksToHtml(text, el) {
+    el.innerHTML = ""
+    const re = /\[([^\]]*)\]\(([^)]*)\)/g
+    let last = 0, m
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) el.appendChild(document.createTextNode(text.slice(last, m.index)))
+      const a = document.createElement("a")
+      a.href = m[2]
+      a.textContent = m[1]
+      el.appendChild(a)
+      last = m.index + m[0].length
+    }
+    if (last < text.length) el.appendChild(document.createTextNode(text.slice(last)))
+  }
+
+  htmlToMarkdownText(el) {
+    let result = ""
+    for (const node of el.childNodes) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        result += node.textContent
+      } else if (node.nodeName === "A") {
+        result += `[${node.textContent}](${node.getAttribute("href") || ""})`
+      } else {
+        result += this.htmlToMarkdownText(node)
+      }
+    }
+    return result
+  }
+
+  // ── Link toolbar ───────────────────────────────────────────────────────────
+
+  updateLinkToolbar() {
+    const sel = window.getSelection()
+    if (!sel || sel.rangeCount === 0) { this.hideLinkToolbar(); return }
+
+    const range = sel.getRangeAt(0)
+    let node = range.commonAncestorContainer
+    if (node.nodeType === Node.TEXT_NODE) node = node.parentNode
+
+    const inCanvas = node.closest?.("[data-block-editor-target='canvas']") === this.canvasTarget
+    const inText   = node.closest?.(".block__text, li[contenteditable]")
+    if (!inCanvas || !inText) { this.hideLinkToolbar(); return }
+
+    const existingLink = node.closest("a") ||
+      (range.commonAncestorContainer.nodeType === Node.TEXT_NODE &&
+       range.commonAncestorContainer.parentElement?.closest("a"))
+
+    if (!sel.isCollapsed || existingLink) {
+      // Save while selection is live (mouseup), not when the button is clicked
+      if (!sel.isCollapsed) {
+        this.savedLink = { el: inText, text: range.toString() }
+      }
+      this.showLinkToolbar(range.getBoundingClientRect(), existingLink)
+    } else {
+      this.hideLinkToolbar()
+    }
+  }
+
+  showLinkToolbar(rect, existingLink) {
+    if (!this.linkToolbar) this.buildLinkToolbar()
+
+    const toolbar   = this.linkToolbar
+    const linkBtn   = toolbar.querySelector(".link-toolbar__btn")
+    const inputWrap = toolbar.querySelector(".link-toolbar__input-wrap")
+    const removeBtn = toolbar.querySelector(".link-toolbar__remove")
+
+    linkBtn.hidden   = !!existingLink
+    removeBtn.hidden = !existingLink
+    inputWrap.hidden = true
+    toolbar.hidden   = false
+
+    requestAnimationFrame(() => {
+      const top  = rect.top - toolbar.offsetHeight - 6
+      const left = Math.min(rect.left, window.innerWidth - toolbar.offsetWidth - 8)
+      toolbar.style.top  = `${top}px`
+      toolbar.style.left = `${left}px`
+    })
+  }
+
+  buildLinkToolbar() {
+    const toolbar = document.createElement("div")
+    toolbar.className = "link-toolbar"
+    toolbar.hidden    = true
+    toolbar.innerHTML = `
+      <button class="link-toolbar__btn" type="button">Link</button>
+      <div class="link-toolbar__input-wrap" hidden>
+        <input class="link-toolbar__url" type="url" placeholder="https://…" autocomplete="off">
+        <button class="link-toolbar__apply" type="button">Apply</button>
+      </div>
+      <button class="link-toolbar__remove" type="button" hidden>Remove link</button>
+    `
+    document.body.appendChild(toolbar)
+    this.linkToolbar = toolbar
+
+    toolbar.querySelector(".link-toolbar__btn").addEventListener("mousedown", e => {
+      e.preventDefault()
+      toolbar.querySelector(".link-toolbar__btn").hidden = true
+      toolbar.querySelector(".link-toolbar__input-wrap").hidden = false
+      toolbar.querySelector(".link-toolbar__url").value = ""
+      toolbar.querySelector(".link-toolbar__url").focus()
+    })
+
+    toolbar.querySelector(".link-toolbar__apply").addEventListener("click", () => {
+      this.applyLink(toolbar.querySelector(".link-toolbar__url").value.trim())
+    })
+
+    toolbar.querySelector(".link-toolbar__url").addEventListener("keydown", e => {
+      if (e.key === "Enter")  { e.preventDefault(); this.applyLink(toolbar.querySelector(".link-toolbar__url").value.trim()) }
+      if (e.key === "Escape") this.hideLinkToolbar()
+    })
+
+    toolbar.querySelector(".link-toolbar__remove").addEventListener("mousedown", e => {
+      e.preventDefault()
+      const sel  = window.getSelection()
+      const node = sel?.rangeCount ? sel.getRangeAt(0).commonAncestorContainer : null
+      const a    = node ? (node.nodeType === Node.TEXT_NODE ? node.parentElement : node).closest("a") : null
+      if (a) {
+        const parent = a.parentNode
+        while (a.firstChild) parent.insertBefore(a.firstChild, a)
+        parent.removeChild(a)
+      }
+      this.onChange()
+      this.hideLinkToolbar()
+    })
+  }
+
+  applyLink(url) {
+    if (!url || !this.savedLink) { this.hideLinkToolbar(); return }
+
+    const { el, text } = this.savedLink
+    const markdown = this.htmlToMarkdownText(el)
+    const updated  = this.insertLinkInMarkdown(markdown, text, url)
+
+    if (updated !== null) {
+      this.markdownLinksToHtml(updated, el)
+      this.onChange()
+    }
+
+    this.savedLink = null
+    this.hideLinkToolbar()
+  }
+
+  insertLinkInMarkdown(markdown, text, url) {
+    // Find existing link spans so we skip text that's already linked
+    const spans = []
+    const linkRe = /\[[^\]]*\]\([^)]*\)/g
+    let m
+    while ((m = linkRe.exec(markdown)) !== null) {
+      spans.push([m.index, m.index + m[0].length])
+    }
+
+    const escaped = text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    const re = new RegExp(escaped, "g")
+    while ((m = re.exec(markdown)) !== null) {
+      const insideLink = spans.some(([s, e]) => m.index >= s && m.index + text.length <= e)
+      if (!insideLink) {
+        return markdown.slice(0, m.index) + `[${text}](${url})` + markdown.slice(m.index + text.length)
+      }
+    }
+    return null
+  }
+
+  hideLinkToolbar() {
+    if (this.linkToolbar) this.linkToolbar.hidden = true
   }
 
   // ── Utilities ─────────────────────────────────────────────────────────────
