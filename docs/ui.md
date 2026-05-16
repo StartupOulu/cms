@@ -361,22 +361,20 @@ inline images. YAGNI until a real post needs them.
 
 ### Inline formatting
 
-**None in v1.** No bold, no italic, no inline links. Paragraphs are
-plain text.
+**Bold, italic, and links are supported** within paragraph, heading,
+and list blocks. Stored as markdown syntax (`**bold**`, `*italic*`,
+`[text](url)`) in the block JSON and serialized to HTML at publish and
+preview time.
 
-- Rationale: inline formatting inside a block requires real
-  `contenteditable` handling (selection, paste, IME, undo), which is
-  a genuine engineering project. Skipping it makes v1 shippable and
-  avoids shipping half-baked rich text.
-- URLs in paragraph text render as plain text on the site in v1 —
-  not clickable. Auto-linking is deferred; revisit when users
-  complain. If/when added, it's a short regex pass in the block →
-  markdown serializer that wraps detected URLs with kramdown
-  autolink syntax (`<https://…>`).
-- Inline formatting (bold, italic, explicit link text like
-  `[foo](url)`) will come back when users request it. At that point,
-  decide: hand-roll it or adopt a substrate (Editor.js, Tiptap).
-  Don't pre-build for it.
+- **How to apply.** Highlight text in a block — a floating toolbar
+  appears with B, I, and Link buttons. Bold and italic can also be
+  applied with `Cmd/Ctrl+B` and `Cmd/Ctrl+I`.
+- **Links.** The toolbar shows a URL input when Link is clicked. Only
+  `http://`, `https://`, and root-relative (`/`) URLs are accepted;
+  anything else renders as plain text.
+- **Auto-linking** (bare URLs in prose) is still deferred.
+- **Out of scope:** nested/overlapping spans, strikethrough, inline
+  code. Add when a real post needs them.
 
 ### Interactions
 
@@ -398,8 +396,8 @@ plain text.
   it.
 - **Block reordering.** Not in v1. Users cut and repaste. Revisit
   when a user complains.
-- **Keyboard shortcuts.** Only the redundant `Cmd/Ctrl+S` (covered
-  above). No formatting shortcuts, since there's no formatting.
+- **Keyboard shortcuts.** `Cmd/Ctrl+S` to save. `Cmd/Ctrl+B` bold,
+  `Cmd/Ctrl+I` italic (within a text block with a selection).
 - **Undo.** Browser-native within a single block's text. Cross-block
   undo is deferred; autosave covers the realistic recovery need.
 
