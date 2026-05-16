@@ -23,7 +23,7 @@
             <% end %>
           </div>
           <h2 class="post-list__title">
-            <%= link_to post.title, content_post_path(post) %>
+            <%= link_to post.title, edit_content_post_path(post) %>
           </h2>
           <% if post.description.present? %>
             <p class="post-list__description"><%= post.description %></p>
@@ -31,6 +31,7 @@
         </div>
         <div class="post-list__actions">
           <%= link_to "Edit", edit_content_post_path(post), class: "button button--secondary" %>
+          <%= link_to "Preview ↗", content_post_preview_path(post), class: "button button--ghost", target: "_blank" %>
         </div>
       </li>
     <% end %>

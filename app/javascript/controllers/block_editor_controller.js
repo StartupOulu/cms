@@ -1,12 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
 
 // Block JSON format:
-//   { type: "paragraph", content: "text with [links](url)" }
+//   { type: "paragraph", content: "text with **bold**, *italic*, [links](url)" }
 //   { type: "heading",   level: 2|3, content: "text" }
-//   { type: "ul",        items: ["a", "b with [links](url)"] }
+//   { type: "ul",        items: ["a", "b with **bold**"] }
 //   { type: "ol",        items: ["a", "b"] }
 //   { type: "image",     signed_id: "...", url: "...", alt: "" }
-// Inline content is stored as markdown link syntax: [text](url)
+// Inline content uses markdown syntax: **bold**, *italic*, [text](url)
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
 const MAX_SIZE      = 10 * 1024 * 1024
@@ -248,6 +248,16 @@ export default class extends Controller {
     if (e.key === "/" && el.textContent === "") {
       e.preventDefault()
       this.openMenu(wrapper)
+    }
+
+    if ((e.metaKey || e.ctrlKey) && e.key === "b") {
+      e.preventDefault()
+      if (this.savedLink) this.applyInlineFormat("**", "**")
+    }
+
+    if ((e.metaKey || e.ctrlKey) && e.key === "i") {
+      e.preventDefault()
+      if (this.savedLink) this.applyInlineFormat("*", "*")
     }
   }
 
@@ -499,18 +509,29 @@ export default class extends Controller {
     this.statusTarget.dataset.state = state
   }
 
-  // ── Inline links ──────────────────────────────────────────────────────────
+  // ── Inline formatting ─────────────────────────────────────────────────────
 
   markdownLinksToHtml(text, el) {
     el.innerHTML = ""
-    const re = /\[([^\]]*)\]\(([^)]*)\)/g
+    // Bold must come before italic so ** is matched before *
+    const re = /\*\*([^*]+)\*\*|\*([^*]+)\*|\[([^\]]*)\]\(([^)]*)\)/g
     let last = 0, m
     while ((m = re.exec(text)) !== null) {
       if (m.index > last) el.appendChild(document.createTextNode(text.slice(last, m.index)))
-      const a = document.createElement("a")
-      a.href = m[2]
-      a.textContent = m[1]
-      el.appendChild(a)
+      if (m[1] !== undefined) {
+        const strong = document.createElement("strong")
+        strong.textContent = m[1]
+        el.appendChild(strong)
+      } else if (m[2] !== undefined) {
+        const em = document.createElement("em")
+        em.textContent = m[2]
+        el.appendChild(em)
+      } else {
+        const a = document.createElement("a")
+        a.href = m[4]
+        a.textContent = m[3]
+        el.appendChild(a)
+      }
       last = m.index + m[0].length
     }
     if (last < text.length) el.appendChild(document.createTextNode(text.slice(last)))
@@ -522,7 +543,11 @@ export default class extends Controller {
       if (node.nodeType === Node.TEXT_NODE) {
         result += node.textContent
       } else if (node.nodeName === "A") {
-        result += `[${node.textContent}](${node.getAttribute("href") || ""})`
+        result += `[${this.htmlToMarkdownText(node)}](${node.getAttribute("href") || ""})`
+      } else if (node.nodeName === "STRONG" || node.nodeName === "B") {
+        result += `**${this.htmlToMarkdownText(node)}**`
+      } else if (node.nodeName === "EM" || node.nodeName === "I") {
+        result += `*${this.htmlToMarkdownText(node)}*`
       } else {
         result += this.htmlToMarkdownText(node)
       }
@@ -585,6 +610,9 @@ export default class extends Controller {
     toolbar.className = "link-toolbar"
     toolbar.hidden    = true
     toolbar.innerHTML = `
+      <button class="link-toolbar__bold"   type="button" title="Bold (⌘B)"><strong>B</strong></button>
+      <button class="link-toolbar__italic" type="button" title="Italic (⌘I)"><em>I</em></button>
+      <div class="link-toolbar__sep"></div>
       <button class="link-toolbar__btn" type="button">Link</button>
       <div class="link-toolbar__input-wrap" hidden>
         <input class="link-toolbar__url" type="url" placeholder="https://…" autocomplete="off">
@@ -594,6 +622,16 @@ export default class extends Controller {
     `
     document.body.appendChild(toolbar)
     this.linkToolbar = toolbar
+
+    toolbar.querySelector(".link-toolbar__bold").addEventListener("mousedown", e => {
+      e.preventDefault()
+      this.applyInlineFormat("**", "**")
+    })
+
+    toolbar.querySelector(".link-toolbar__italic").addEventListener("mousedown", e => {
+      e.preventDefault()
+      this.applyInlineFormat("*", "*")
+    })
 
     toolbar.querySelector(".link-toolbar__btn").addEventListener("mousedown", e => {
       e.preventDefault()
@@ -631,33 +669,36 @@ export default class extends Controller {
     if (!url || !this.savedLink) { this.hideLinkToolbar(); return }
 
     const { el, text } = this.savedLink
-    const markdown = this.htmlToMarkdownText(el)
-    const updated  = this.insertLinkInMarkdown(markdown, text, url)
-
-    if (updated !== null) {
-      this.markdownLinksToHtml(updated, el)
-      this.onChange()
-    }
+    const updated = this.wrapInMarkdown(this.htmlToMarkdownText(el), text, `[${text}](${url})`)
+    if (updated !== null) { this.markdownLinksToHtml(updated, el); this.onChange() }
 
     this.savedLink = null
     this.hideLinkToolbar()
   }
 
-  insertLinkInMarkdown(markdown, text, url) {
-    // Find existing link spans so we skip text that's already linked
+  applyInlineFormat(open, close) {
+    if (!this.savedLink) return
+    const { el, text } = this.savedLink
+    const updated = this.wrapInMarkdown(this.htmlToMarkdownText(el), text, `${open}${text}${close}`)
+    if (updated !== null) { this.markdownLinksToHtml(updated, el); this.onChange() }
+    this.hideLinkToolbar()
+  }
+
+  wrapInMarkdown(markdown, text, replacement) {
+    // Find all existing inline spans so we skip text already inside them
     const spans = []
-    const linkRe = /\[[^\]]*\]\([^)]*\)/g
+    const spanRe = /\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]*\]\([^)]*\)/g
     let m
-    while ((m = linkRe.exec(markdown)) !== null) {
+    while ((m = spanRe.exec(markdown)) !== null) {
       spans.push([m.index, m.index + m[0].length])
     }
 
     const escaped = text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
     const re = new RegExp(escaped, "g")
     while ((m = re.exec(markdown)) !== null) {
-      const insideLink = spans.some(([s, e]) => m.index >= s && m.index + text.length <= e)
-      if (!insideLink) {
-        return markdown.slice(0, m.index) + `[${text}](${url})` + markdown.slice(m.index + text.length)
+      const inside = spans.some(([s, e]) => m.index >= s && m.index + text.length <= e)
+      if (!inside) {
+        return markdown.slice(0, m.index) + replacement + markdown.slice(m.index + text.length)
       }
     }
     return null

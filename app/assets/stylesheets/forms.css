@@ -10,6 +10,12 @@
     margin-block-end: var(--space-1);
   }
 
+  .field__hint {
+    font-size:        var(--text-sm);
+    color:            var(--color-text-muted);
+    margin-block-start: var(--space-1);
+  }
+
   .field input[type="text"],
   .field input[type="email"],
   .field input[type="password"],

@@ -9,6 +9,7 @@ module Content
     end
 
     def show
+      redirect_to edit_content_post_path(@post)
     end
 
     def new

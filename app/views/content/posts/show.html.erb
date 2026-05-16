@@ -1,26 +1,7 @@
-<div class="post-back">
-  <%= link_to "← All posts", content_posts_path %>
-</div>
-
 <div class="post-detail">
 
-  <h1 class="post-detail__title"><%= @post.title %></h1>
-
-  <div class="post-detail__toolbar">
-    <div class="post-detail__toolbar-status">
-      <% if @post.published? %>
-        <span class="post-list__status post-list__status--published">Published</span>
-        <span class="sidebar-section__date"><%= @post.published_at.strftime("%d %b %Y") %></span>
-      <% else %>
-        <span class="post-list__status post-list__status--draft">Draft</span>
-      <% end %>
-      <span class="post-list__dot">·</span>
-      <span class="sidebar-section__date"><%= @post.user.display_label %></span>
-      <% if @post.pending_changes? %>
-        <span class="post-list__dot">·</span>
-        <span class="sidebar-section__date">Unpublished changes</span>
-      <% end %>
-    </div>
+  <div class="post-detail__topbar">
+    <%= link_to "← All posts", content_posts_path, class: "post-detail__back" %>
     <div class="post-detail__toolbar-actions">
       <%= link_to "Edit", edit_content_post_path(@post), class: "button button--secondary" %>
       <%= link_to "Preview ↗", content_post_preview_path(@post), class: "button button--secondary", target: "_blank" %>
@@ -40,6 +21,24 @@
         <%= button_to "Delete", content_post_path(@post), method: :delete,
                       class: "button button--danger",
                       form: { data: { turbo_confirm: "Delete this post permanently?" } } %>
+      <% end %>
+    </div>
+  </div>
+
+  <div>
+    <h1 class="post-detail__title"><%= @post.title %></h1>
+    <div class="post-detail__meta">
+      <% if @post.published? %>
+        <span class="post-list__status post-list__status--published">Published</span>
+        <span class="sidebar-section__date"><%= @post.published_at.strftime("%d %b %Y") %></span>
+      <% else %>
+        <span class="post-list__status post-list__status--draft">Draft</span>
+      <% end %>
+      <span class="post-list__dot">·</span>
+      <span class="sidebar-section__date"><%= @post.user.display_label %></span>
+      <% if @post.pending_changes? %>
+        <span class="post-list__dot">·</span>
+        <span class="sidebar-section__date">Unpublished changes</span>
       <% end %>
     </div>
   </div>

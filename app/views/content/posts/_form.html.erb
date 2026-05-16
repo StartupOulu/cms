@@ -59,18 +59,19 @@
   <% end %>
 
   <div class="field">
-    <%= f.label :blocks, "Content" %>
     <div class="editor"
          data-controller="block-editor"
          data-block-editor-blocks-value="<%= (post.blocks || []).to_json %>"
          data-block-editor-url-value="<%= autosave_url %>"
          data-block-editor-upload-url-value="<%= upload_url %>">
       <div class="editor__toolbar">
+        <%= f.label :blocks, "Content" %>
         <span class="editor__status" data-block-editor-target="status"></span>
       </div>
       <div class="editor-canvas" data-block-editor-target="canvas"></div>
       <input type="hidden" name="content_post[blocks]" data-block-editor-target="input">
     </div>
+    <p class="field__hint">Highlight text to make it bold, italic, or add a link.</p>
   </div>
 
   <div class="field">
@@ -86,6 +87,9 @@
       <%= f.submit "Save", name: nil, class: "button button--secondary" %>
     <% end %>
     <%= f.submit "Publish", name: :publish, class: "button button--primary", data: { submit_guard_target: "publish" } %>
-    <%= link_to "Cancel", post.persisted? ? content_post_path(post) : content_posts_path, class: "button button--ghost" %>
+    <% if post.persisted? %>
+      <%= link_to "Preview ↗", content_post_preview_path(post), class: "button button--secondary", target: "_blank" %>
+    <% end %>
+    <%= link_to "← All posts", content_posts_path, class: "button button--secondary" %>
   </div>
 <% end %>

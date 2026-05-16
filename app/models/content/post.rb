@@ -137,21 +137,32 @@ module Content
       e = ->(s) { CGI.escapeHTML(s.to_s) }
       case block["type"]
       when "paragraph"
-        "<p>#{e.(block["content"])}</p>"
+        "<p>#{inline_md(block["content"])}</p>"
       when "heading"
         level = block["level"].to_i.clamp(1, 6)
-        "<h#{level}>#{e.(block["content"])}</h#{level}>"
+        "<h#{level}>#{inline_md(block["content"])}</h#{level}>"
       when "ul"
-        items = block["items"].map { |i| "<li>#{e.(i)}</li>" }.join
+        items = block["items"].map { |i| "<li>#{inline_md(i)}</li>" }.join
         "<ul>#{items}</ul>"
       when "ol"
-        items = block["items"].map { |i| "<li>#{e.(i)}</li>" }.join
+        items = block["items"].map { |i| "<li>#{inline_md(i)}</li>" }.join
         "<ol>#{items}</ol>"
       when "image"
         blob = ActiveStorage::Blob.find_signed(block["signed_id"])
         return nil unless blob
         "<figure><img src=\"#{inline_image_path(blob)}\" alt=\"#{e.(block["alt"])}\"></figure>"
       end
+    end
+
+    def inline_md(text)
+      result = CGI.escapeHTML(text.to_s)
+      result = result.gsub(/\*\*(.+?)\*\*/m) { "<strong>#{$1}</strong>" }
+      result = result.gsub(/\*(.+?)\*/m)     { "<em>#{$1}</em>" }
+      result = result.gsub(/\[([^\]]+)\]\(([^)]+)\)/) do
+        label, url = $1, $2
+        url.match?(/\Ahttps?:\/\/|\A\//) ? "<a href=\"#{url}\">#{label}</a>" : label
+      end
+      result
     end
 
     def serialize_blocks(blocks)

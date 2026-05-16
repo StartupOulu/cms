@@ -1,19 +1,19 @@
 <% blocks.each do |block| %>
   <% case block["type"] %>
   <% when "paragraph" %>
-    <p><%= block["content"] %></p>
+    <p><%= inline_markdown(block["content"]) %></p>
   <% when "heading" %>
-    <%= content_tag("h#{block["level"].to_i}", block["content"]) %>
+    <%= content_tag("h#{block["level"].to_i}", inline_markdown(block["content"])) %>
   <% when "ul" %>
     <ul>
       <% block["items"].each do |item| %>
-        <li><%= item %></li>
+        <li><%= inline_markdown(item) %></li>
       <% end %>
     </ul>
   <% when "ol" %>
     <ol>
       <% block["items"].each do |item| %>
-        <li><%= item %></li>
+        <li><%= inline_markdown(item) %></li>
       <% end %>
     </ol>
   <% when "image" %>
