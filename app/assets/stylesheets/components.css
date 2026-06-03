@@ -387,6 +387,49 @@
     word-break:  break-all;
   }
 
+  /* ── Disk usage ──────────────────────────────── */
+  .disk-usage {
+    margin-block-end:  var(--space-10);
+    padding-block-end: var(--space-10);
+    border-block-end:  1px solid var(--color-border);
+  }
+
+  .disk-usage__heading {
+    margin-block-end: var(--space-5);
+  }
+
+  .disk-gauge__track {
+    height:            1.25rem;
+    background:        var(--color-bg);
+    border:            1px solid var(--color-border);
+    border-radius:     var(--radius);
+    overflow:          hidden;
+    margin-block-end:  var(--space-4);
+  }
+
+  .disk-gauge__fill {
+    height:     100%;
+    transition: width 0.3s ease;
+  }
+
+  .disk-gauge__fill--ok       { background: oklch(60% 0.15 145); }
+  .disk-gauge__fill--warn     { background: oklch(72% 0.14 80); }
+  .disk-gauge__fill--critical { background: oklch(58% 0.18 25); }
+
+  .disk-gauge__legend {
+    display:               grid;
+    grid-template-columns: max-content 1fr;
+    gap:                   var(--space-1) var(--space-6);
+    font-size:             var(--text-sm);
+  }
+
+  .disk-gauge__legend dt {
+    color:       var(--color-text-muted);
+    font-weight: 500;
+  }
+
+  .disk-gauge__legend dd { margin: 0; }
+
   /* ── Event facts bar ─────────────────────────── */
   .event-facts {
     display:          flex;

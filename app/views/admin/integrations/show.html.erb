@@ -14,6 +14,31 @@
   <% end %>
 </div>
 
+<% if @disk_stats %>
+  <section class="disk-usage" aria-label="Disk usage">
+    <h2 class="disk-usage__heading">Disk usage</h2>
+    <div class="disk-gauge">
+      <div class="disk-gauge__track">
+        <div class="disk-gauge__fill disk-gauge__fill--<%= @disk_stats[:severity] %>"
+             style="width: <%= @disk_stats[:percent] %>%"
+             role="meter"
+             aria-valuenow="<%= @disk_stats[:percent] %>"
+             aria-valuemin="0"
+             aria-valuemax="100"
+             aria-label="<%= @disk_stats[:percent] %>% used"></div>
+      </div>
+      <dl class="disk-gauge__legend">
+        <dt>Used</dt>
+        <dd><%= number_to_human_size(@disk_stats[:used]) %> (<%= @disk_stats[:percent] %>%)</dd>
+        <dt>Available</dt>
+        <dd><%= number_to_human_size(@disk_stats[:available]) %></dd>
+        <dt>Total</dt>
+        <dd><%= number_to_human_size(@disk_stats[:total]) %></dd>
+      </dl>
+    </div>
+  </section>
+<% end %>
+
 <% @sites_status.each do |site, checks| %>
   <% site_ok = checks.all?(&:ok) %>
   <section class="git-site">
