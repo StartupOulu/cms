@@ -110,6 +110,30 @@ Tests use SQLite and a real temporary git repository for publish integration tes
 
 ---
 
-## License
+## Log rotate
 
-To be decided before first external contribution. Leaning MIT or Apache 2.0.
+In production server, `logrotate` keeps the logs from growing too big. 
+
+Configuration file
+
+```
+# /etc/logrotate.d/cms
+
+/var/www/apps/cms/logs/puma.stdout.log /var/www/apps/cms/logs/puma.stderr.log {
+  size 250M
+  rotate 4
+  compress
+  delaycompress
+  missingok
+  notifempty
+  copytruncate
+}
+```
+
+Set up cron job to run it every hour, logrotate runs on startup by default.
+
+```
+# /etc/cron.hourly/logrotate-cms
+/usr/sbin/logrotate /etc/logrotate.d/cms
+```
+
