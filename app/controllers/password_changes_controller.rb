@@ -14,7 +14,11 @@ class PasswordChangesController < ApplicationController
       return render :edit, status: :unprocessable_entity
     end
 
-    Current.user.update!(password: params[:password], must_change_password: false)
-    redirect_to root_path, notice: "Password updated. Welcome!"
+    if Current.user.update(password: params[:password], must_change_password: false)
+      redirect_to root_path, notice: "Password updated. Welcome!"
+    else
+      flash.now[:alert] = Current.user.errors.full_messages.to_sentence
+      render :edit, status: :unprocessable_entity
+    end
   end
 end
