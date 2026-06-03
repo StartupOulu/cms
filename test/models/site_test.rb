@@ -50,7 +50,7 @@ class SiteTest < ActiveSupport::TestCase
   end
 
   test "membership_for returns nil for non-member" do
-    stranger = User.create!(email_address: "stranger@example.com", password: "secret123")
+    stranger = User.create!(email_address: "stranger@example.com", password: "secret12345")
     assert_nil site.membership_for(stranger)
   end
 
