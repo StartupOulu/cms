@@ -11,22 +11,19 @@ class UsersController < ApplicationController
 
   def create
     temp_password = SecureRandom.alphanumeric(12)
-    @user = User.new(
-      email_address:        user_params[:email_address],
-      display_name:         user_params[:display_name].presence,
-      password:             temp_password,
-      must_change_password: true
-    )
+    @user = User.create_for_site(Current.site,
+      { email_address: user_params[:email_address],
+        display_name:  user_params[:display_name].presence,
+        password:      temp_password,
+        must_change_password: true },
+      role: role_param)
 
-    ActiveRecord::Base.transaction do
-      @user.save!
-      Current.site.memberships.create!(user: @user, role: role_param)
+    if @user.persisted?
+      session[:new_user_creds] = { "email" => @user.email_address, "password" => temp_password }
+      redirect_to user_credentials_path
+    else
+      render :new, status: :unprocessable_entity
     end
-
-    session[:new_user_creds] = { "email" => @user.email_address, "password" => temp_password }
-    redirect_to user_credentials_path
-  rescue ActiveRecord::RecordInvalid
-    render :new, status: :unprocessable_entity
   end
 
   def credentials
