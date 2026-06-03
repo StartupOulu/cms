@@ -43,6 +43,12 @@ class Site < ApplicationRecord
     end
   end
 
+  def display_host
+    URI.parse(site_url).host.presence || name
+  rescue URI::InvalidURIError, TypeError
+    name
+  end
+
   def publish_author
     "#{publish_author_name} <#{publish_author_email}>"
   end

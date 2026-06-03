@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="<%= I18n.locale %>">
   <head>
-    <title><%= [content_for(:title).presence, Rails.application.config_for(:cms)[:name]].compact.join(" – ") %></title>
+    <title><%= page_title(content_for(:title).presence) %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>

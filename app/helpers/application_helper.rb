@@ -1,4 +1,9 @@
 module ApplicationHelper
+  def page_title(*parts)
+    cms_name = Rails.application.config_for(:cms)[:name]
+    [ *parts, cms_name, Current.site&.display_host ].compact.join(" – ")
+  end
+
   # Renders inline markdown (bold, italic, links) as HTML.
   # Input is HTML-escaped first so no injection is possible.
   def inline_markdown(text)
