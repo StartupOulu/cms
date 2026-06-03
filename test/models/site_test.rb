@@ -20,6 +20,27 @@ class SiteTest < ActiveSupport::TestCase
     assert_not site.valid?
   end
 
+  # display_host
+
+  test "display_host returns hostname from site_url" do
+    assert_equal "startupoulu.com", site.display_host
+  end
+
+  test "display_host falls back to name when site_url has no host" do
+    site.site_url = "/relative/path"
+    assert_equal site.name, site.display_host
+  end
+
+  test "display_host falls back to name when site_url is malformed" do
+    site.site_url = "not a url at all :// ???"
+    assert_equal site.name, site.display_host
+  end
+
+  test "display_host falls back to name when site_url is nil" do
+    site.site_url = nil
+    assert_equal site.name, site.display_host
+  end
+
   test "publish_author combines name and email" do
     assert_equal "CMS Bot <cms@startupoulu.com>", site.publish_author
   end
