@@ -234,7 +234,32 @@ class Site < ApplicationRecord
   def git(*args)
     env = deploy_key_path.present? ? { "GIT_SSH_COMMAND" => "ssh -i #{deploy_key_path} -o StrictHostKeyChecking=no" } : {}
     stdout, stderr, status = Open3.capture3(env, "git", *args, chdir: clone_path)
-    raise PublishError, stderr.presence || "git #{args.first} failed" unless status.success?
+    raise PublishError, git_error_message(args, stdout, stderr, status) unless status.success?
     stdout
+  end
+
+  # Git scatters useful output across stderr (most errors), stdout
+  # ("nothing to commit"), and the exit code, so we surface all three.
+  def git_error_message(args, stdout, stderr, status)
+    output = [ stderr, stdout ].map(&:strip).reject(&:empty?).join("\n")
+    "git #{git_subcommand(args)} failed (exit #{status.exitstatus})" \
+      "#{": #{output}" if output.present?}"
+  end
+
+  # The subcommand isn't always args.first: `commit` is preceded by
+  # `-c user.name=… -c user.email=…`. Skip flags and their values.
+  def git_subcommand(args)
+    index = 0
+    while index < args.length
+      arg = args[index]
+      if arg == "-c"
+        index += 2
+      elsif arg.start_with?("-")
+        index += 1
+      else
+        return arg
+      end
+    end
+    "command"
   end
 end

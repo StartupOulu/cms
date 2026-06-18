@@ -82,6 +82,21 @@ class SiteTest < ActiveSupport::TestCase
     end
   end
 
+  # commit_and_push error reporting
+
+  test "commit_and_push surfaces the failing subcommand and git output" do
+    with_git_site(site) do
+      # Committing with nothing staged fails; git writes the reason to stdout.
+      error = assert_raises(PublishError) do
+        site.commit_and_push({}, "Empty commit", author: site.publish_author)
+      end
+
+      assert_match "git commit failed", error.message
+      assert_match "exit", error.message
+      assert_match(/nothing to commit/i, error.message)
+    end
+  end
+
   # render_preview
 
   test "render_preview renders post content through layout" do

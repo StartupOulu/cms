@@ -219,9 +219,13 @@ as `chdir`.
 5. `git commit` with a message like `Publish: <title>` and the
    site's configured author.
 6. `git push origin <site.branch>`.
-7. On success, mark the post/event as published. On failure, capture
-   stderr, mark the content as publish-failed, surface error to
-   user.
+7. On success, mark the post/event as published. On failure, raise a
+   `PublishError` whose message names the failing subcommand and
+   includes git's exit code, stderr, and stdout (git scatters useful
+   output across all three — e.g. "nothing to commit" lands on
+   stdout). That message is recorded on the `publish_failed`
+   `Audit::Event` (`error_message`) and surfaced to the user on the
+   dashboard publish-failures panel.
 
 ### Why `Open3.capture3`
 
@@ -239,7 +243,10 @@ stdout, stderr, status = Open3.capture3(
   "git", "commit", "-m", "Publish: #{post.title}",
   chdir: site.clone_path
 )
-raise PublishError, stderr unless status.success?
+unless status.success?
+  output = [ stderr, stdout ].map(&:strip).reject(&:empty?).join("\n")
+  raise PublishError, "git commit failed (exit #{status.exitstatus}): #{output}"
+end
 ```
 
 Never interpolate user input into shell strings. Never use backticks
