@@ -216,9 +216,9 @@ module Content
         md = File.read(File.join(clone, post.jekyll_path))
         assert_includes md, "blog_image:"
 
-        key = post.cover_image.blob.key
-        assert File.exist?(File.join(clone, "assets/images/blogs/#{key}.png")),
-               "cover image should be committed to the repo"
+        assert_includes md, "blog_image: \"/assets/images/blogs/2026-04-hello-world.png\""
+        assert File.exist?(File.join(clone, "assets/images/blogs/2026-04-hello-world.png")),
+               "cover image should be committed under its slug-derived name"
       end
     end
 
@@ -241,9 +241,9 @@ module Content
 
         md = File.read(File.join(clone, post.jekyll_path))
         assert_includes md, "![A photo]"
-        assert_includes md, "assets/images/blogs/#{blob.key}.png"
-        assert File.exist?(File.join(clone, "assets/images/blogs/#{blob.key}.png")),
-               "inline image should be committed to the repo"
+        assert_includes md, "assets/images/blogs/2026-04-hello-world-1.png"
+        assert File.exist?(File.join(clone, "assets/images/blogs/2026-04-hello-world-1.png")),
+               "inline image should be committed under its slug-derived name"
       end
     end
 
@@ -266,6 +266,84 @@ module Content
         assert post.reload.draft?
         assert_nil post.reload.published_fields
         assert_nil post.reload.published_blocks
+      end
+    end
+
+    test "publish! removes images the post no longer references" do
+      with_git_site(site) do |clone|
+        Current.site    = site
+        Current.session = users(:admin).sessions.create!
+
+        blob = ActiveStorage::Blob.create_and_upload!(
+          io:           File.open(Rails.root.join("test/fixtures/files/test.png")),
+          filename:     "inline.png",
+          content_type: "image/png"
+        )
+        post.update!(blocks: [
+          { "type" => "paragraph", "content" => "Before." },
+          { "type" => "image", "signed_id" => blob.signed_id, "alt" => "A photo" }
+        ])
+        post.publish!
+
+        image = File.join(clone, "assets/images/blogs/2026-04-hello-world-1.png")
+        assert File.exist?(image)
+
+        post.update!(blocks: [ { "type" => "paragraph", "content" => "Before." } ])
+        post.publish!
+
+        assert_not File.exist?(image), "image dropped from the post should be removed from the repo"
+      end
+    end
+
+    test "publish! removes the old cover image when the slug changes" do
+      with_git_site(site) do |clone|
+        Current.site    = site
+        Current.session = users(:admin).sessions.create!
+
+        post.cover_image.attach(
+          io:           File.open(Rails.root.join("test/fixtures/files/test.png")),
+          filename:     "cover.png",
+          content_type: "image/png"
+        )
+        post.publish!
+
+        old_image = File.join(clone, "assets/images/blogs/2026-04-hello-world.png")
+        assert File.exist?(old_image)
+
+        post.update!(slug: "hello-world-renamed")
+        post.publish!
+
+        assert_not File.exist?(old_image), "cover image under the old slug should be removed"
+        assert File.exist?(File.join(clone, "assets/images/blogs/2026-04-hello-world-renamed.png"))
+      end
+    end
+
+    test "a cover image published before assets were tracked is an orphan" do
+      post.update_column(:published_fields, {
+        "slug" => post.slug, "cover_image" => "/assets/images/blogs/oldstoragekey.png"
+      })
+      assert_equal [ "assets/images/blogs/oldstoragekey.png" ], post.orphaned_asset_paths
+    end
+
+    test "unpublish! removes published images along with the markdown" do
+      with_git_site(site) do |clone|
+        Current.site    = site
+        Current.session = users(:admin).sessions.create!
+
+        post.cover_image.attach(
+          io:           File.open(Rails.root.join("test/fixtures/files/test.png")),
+          filename:     "cover.png",
+          content_type: "image/png"
+        )
+        post.publish!
+
+        cover = File.join(clone, "assets/images/blogs/2026-04-hello-world.png")
+        assert File.exist?(cover)
+
+        post.unpublish!
+
+        assert_not File.exist?(cover), "cover image should not be left behind after unpublishing"
+        assert_not File.exist?(File.join(clone, post.jekyll_path))
       end
     end
   end

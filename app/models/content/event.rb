@@ -21,21 +21,27 @@ module Content
     before_validation :generate_slug, if: -> { slug.blank? && title.present? }
 
     def jekyll_path
-      "_events/#{start_time.strftime("%Y-%m")}-#{slug}.html"
+      "_events/#{asset_basename}.html"
     end
 
     def jekyll_files_to_delete
       return [] unless published?
+      paths = []
       old_path = published_fields&.dig("jekyll_path")
-      return [] unless old_path && old_path != jekyll_path
-      [old_path]
+      paths << old_path if old_path && old_path != jekyll_path
+      paths + orphaned_asset_paths
+    end
+
+    def jekyll_asset_paths
+      [ cover_image_publish_path&.delete_prefix("/") ].compact
     end
 
     def save_published_snapshot!
       update_column(:published_fields, {
         "slug"        => slug,
         "jekyll_path" => jekyll_path,
-        "cover_image" => cover_image_bare_filename
+        "cover_image" => cover_image_bare_filename,
+        "assets"      => jekyll_asset_paths
       }.compact)
     end
 
@@ -45,6 +51,18 @@ module Content
 
     def published_slug
       published_fields&.dig("slug")
+    end
+
+    # Named after the event itself (2026-09-bc-season-opening.png) rather than the
+    # opaque ActiveStorage key, matching how the site's images are named by hand.
+    def cover_image_bare_filename
+      return nil unless cover_image.attached?
+      "#{asset_basename}#{image_extension(cover_image.blob)}"
+    end
+
+    def cover_image_publish_path
+      return nil unless cover_image.attached?
+      "/assets/images/events/#{cover_image_bare_filename}"
     end
 
     def cover_image_path
@@ -75,6 +93,15 @@ module Content
 
     private
 
+    def asset_basename
+      "#{start_time.strftime("%Y-%m")}-#{slug}"
+    end
+
+    def legacy_published_asset_paths
+      filename = published_fields&.dig("cover_image")
+      filename.present? ? [ "assets/images/events/#{filename}" ] : []
+    end
+
     # Psych quotes timestamp-looking strings (e.g. 'start_time: '2026-07-15 20:00:00'')
     # so they round-trip as strings rather than YAML timestamps. The site's front-matter
     # validator reads the raw value and rejects the quotes, so emit these as bare scalars.
@@ -94,18 +121,6 @@ module Content
 
     def commit_message
       published? ? "Update event: #{title}" : "Publish event: #{title}"
-    end
-
-    def cover_image_publish_path
-      return nil unless cover_image.attached?
-      ext = File.extname(cover_image.blob.filename.to_s)
-      "/assets/images/events/#{cover_image.blob.key}#{ext}"
-    end
-
-    def cover_image_bare_filename
-      return nil unless cover_image.attached?
-      ext = File.extname(cover_image.blob.filename.to_s)
-      "#{cover_image.blob.key}#{ext}"
     end
 
     COVER_IMAGE_TYPES = %w[image/jpeg image/png image/webp].freeze

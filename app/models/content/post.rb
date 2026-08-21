@@ -31,16 +31,25 @@ module Content
     end
 
     def jekyll_files_to_delete
-      return [] unless published? && published_slug && published_slug != slug
-      date = published_at.strftime("%Y-%m-%d")
-      [ "_posts/#{date}-#{published_slug}.markdown" ]
+      return [] unless published?
+      paths = []
+      if published_slug && published_slug != slug
+        date = published_at.strftime("%Y-%m-%d")
+        paths << "_posts/#{date}-#{published_slug}.markdown"
+      end
+      paths + orphaned_asset_paths
+    end
+
+    def jekyll_asset_paths
+      asset_attachments.map { |path, _blob| path.delete_prefix("/") }
     end
 
     def save_published_snapshot!
       update_column(:published_fields, {
         "description" => description,
         "slug"        => slug,
-        "cover_image" => cover_image_publish_path
+        "cover_image" => cover_image_publish_path,
+        "assets"      => jekyll_asset_paths
       }.compact)
       update_column(:published_blocks, blocks)
     end
@@ -84,20 +93,36 @@ module Content
 
     private
 
+    # Named after the post itself (2026-08-founders-corner.png) rather than the
+    # opaque ActiveStorage key, matching how the site's images are named by hand.
+    def asset_basename
+      "#{(published_at || Time.current).strftime("%Y-%m")}-#{slug}"
+    end
+
+    # Every image this post publishes, paired with the blob to write there.
+    # jekyll_files and jekyll_asset_paths both read from this so the files
+    # written and the files tracked can never drift apart.
+    def asset_attachments
+      attachments = []
+      attachments << [ cover_image_publish_path, cover_image.blob ] if cover_image.attached?
+
+      (blocks || []).each do |block|
+        blob = inline_image_blob(block)
+        next unless blob
+        attachments << [ inline_image_path(blob, block), blob ]
+      end
+
+      attachments.uniq { |path, _blob| path }
+    end
+
+    def legacy_published_asset_paths
+      path = published_fields&.dig("cover_image")
+      path.present? ? [ path.delete_prefix("/") ] : []
+    end
+
     def jekyll_files
       files = { jekyll_path => to_markdown }
-
-      if cover_image.attached?
-        files[cover_image_publish_path.delete_prefix("/")] = cover_image.blob.download
-      end
-
-      (blocks || []).each_with_index do |block, i|
-        next unless block["type"] == "image" && block["signed_id"].present?
-        blob = ActiveStorage::Blob.find_signed(block["signed_id"])
-        next unless blob
-        files[inline_image_path(blob).delete_prefix("/")] = blob.download
-      end
-
+      asset_attachments.each { |path, blob| files[path.delete_prefix("/")] = blob.download }
       files
     end
 
@@ -107,13 +132,25 @@ module Content
 
     def cover_image_publish_path
       return nil unless cover_image.attached?
-      ext = File.extname(cover_image.blob.filename.to_s)
-      "/assets/images/blogs/#{cover_image.blob.key}#{ext}"
+      "/assets/images/blogs/#{asset_basename}#{image_extension(cover_image.blob)}"
     end
 
-    def inline_image_path(blob)
-      ext = File.extname(blob.filename.to_s)
-      "/assets/images/blogs/#{blob.key}#{ext}"
+    def inline_image_blob(block)
+      return nil unless block["type"] == "image" && block["signed_id"].present?
+      ActiveStorage::Blob.find_signed(block["signed_id"])
+    end
+
+    # Numbered by the order the image blocks appear, so reordering a post renames
+    # its images — the stale names are cleaned up as orphans on the next publish.
+    def inline_image_path(blob, block)
+      "/assets/images/blogs/#{asset_basename}-#{inline_image_position(block)}#{image_extension(blob)}"
+    end
+
+    def inline_image_position(block)
+      signed_ids = (blocks || []).filter_map do |b|
+        b["signed_id"] if b["type"] == "image" && b["signed_id"].present?
+      end.uniq
+      signed_ids.index(block["signed_id"]).to_i + 1
     end
 
     COVER_IMAGE_TYPES = %w[image/jpeg image/png image/webp].freeze
@@ -148,9 +185,9 @@ module Content
         items = block["items"].map { |i| "<li>#{inline_md(i)}</li>" }.join
         "<ol>#{items}</ol>"
       when "image"
-        blob = ActiveStorage::Blob.find_signed(block["signed_id"])
+        blob = inline_image_blob(block)
         return nil unless blob
-        "<figure><img src=\"#{inline_image_path(blob)}\" alt=\"#{e.(block["alt"])}\"></figure>"
+        "<figure><img src=\"#{inline_image_path(blob, block)}\" alt=\"#{e.(block["alt"])}\"></figure>"
       end
     end
 
@@ -177,8 +214,8 @@ module Content
       when "ul"        then block["items"].map { |i| "- #{i}" }.join("\n")
       when "ol"        then block["items"].each_with_index.map { |i, n| "#{n + 1}. #{i}" }.join("\n")
       when "image"
-        blob = ActiveStorage::Blob.find_signed(block["signed_id"])
-        blob ? "![#{block["alt"].to_s}](#{inline_image_path(blob)})" : nil
+        blob = inline_image_blob(block)
+        blob ? "![#{block["alt"]}](#{inline_image_path(blob, block)})" : nil
       end
     end
   end
