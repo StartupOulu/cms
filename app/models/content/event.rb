@@ -70,10 +70,17 @@ module Content
         "cta_link"    => cta_link.presence
       }.compact
 
-      "#{front_matter.to_yaml}---\n"
+      "#{unquote_times(front_matter.to_yaml)}---\n"
     end
 
     private
+
+    # Psych quotes timestamp-looking strings (e.g. 'start_time: '2026-07-15 20:00:00'')
+    # so they round-trip as strings rather than YAML timestamps. The site's front-matter
+    # validator reads the raw value and rejects the quotes, so emit these as bare scalars.
+    def unquote_times(yaml)
+      yaml.gsub(/^(start_time|end_time): '(.+)'$/, '\1: \2')
+    end
 
     def jekyll_files
       files = { jekyll_path => to_markdown }
